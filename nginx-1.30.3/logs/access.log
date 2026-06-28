@@ -358,3 +358,5 @@
 127.0.0.1 - - [28/Jun/2026:18:48:02 +0800] "GET /assets/parking-DePgJnSp.js HTTP/1.1" 200 734 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
 127.0.0.1 - - [28/Jun/2026:18:48:02 +0800] "GET /favicon.svg HTTP/1.1" 200 493 "http://localhost/user" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
 127.0.0.1 - - [28/Jun/2026:18:48:02 +0800] "GET /api/parking-lots/nearby?longitude=113.95&latitude=22.54&radius=5000 HTTP/1.1" 200 69 "http://localhost/user" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+127.0.0.1 - - [28/Jun/2026:18:53:49 +0800] "GET /admin/assets/Settings-DF-5Gr2T.js HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+127.0.0.1 - - [28/Jun/2026:18:53:49 +0800] "GET /favicon.svg HTTP/1.1" 304 0 "http://localhost/admin/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"

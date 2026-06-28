@@ -198,6 +198,11 @@ POST /api/user/send-code
 2. 存入 Redis：`SETEX sms:code:{phone} 300 {code}`（5 分钟有效）
 3. 调用短信网关发送（对接第三方 SMS 服务）
 
+**Response** `data` 为空，仅返回统一信封：
+```json
+{ "code": 200, "message": "验证码已发送" }
+```
+
 ---
 
 ## 二、客户端接口（需 JWT）
@@ -222,6 +227,11 @@ PUT /api/user/profile
 **Request**
 ```json
 { "phone": "13900000000", "avatar": "url" }
+```
+
+**Response `data`**
+```json
+{ "id": 1, "username": "张三", "phone": "13900000000", "avatar": "https://..." }
 ```
 
 ---
@@ -250,6 +260,11 @@ POST /api/vehicles
 { "plateNumber": "粤B·88888", "brand": "特斯拉 Model 3", "color": "白色" }
 ```
 
+**Response `data`**
+```json
+{ "id": 2, "plateNumber": "粤B·88888", "brand": "特斯拉 Model 3", "color": "白色" }
+```
+
 #### 修改车辆
 ```
 PUT /api/vehicles/{id}
@@ -260,9 +275,19 @@ PUT /api/vehicles/{id}
 { "plateNumber": "粤B·88888", "brand": "特斯拉", "color": "黑色" }
 ```
 
+**Response `data`**
+```json
+{ "id": 1, "plateNumber": "粤B·88888", "brand": "特斯拉", "color": "黑色" }
+```
+
 #### 删除车辆
 ```
 DELETE /api/vehicles/{id}
+```
+
+**Response** `data` 为空，仅返回统一信封：
+```json
+{ "code": 200, "message": "删除成功" }
 ```
 
 ---
@@ -367,6 +392,11 @@ PUT /api/orders/{id}/enter
 2. 记录 `startTime = now()`
 3. 发送 RabbitMQ `order.enter`
 
+**Response** `data` 为空，仅返回统一信封：
+```json
+{ "code": 200, "message": "入场成功" }
+```
+
 ---
 
 #### 结算订单
@@ -412,6 +442,11 @@ PUT /api/orders/{id}/cancel
 3. 增加 availableSpots
 4. 删除分布式锁
 
+**Response** `data` 为空，仅返回统一信封：
+```json
+{ "code": 200, "message": "已取消" }
+```
+
 ---
 
 ### 2.4 消息管理
@@ -447,9 +482,19 @@ GET /api/messages
 PUT /api/messages/{id}/read
 ```
 
+**Response** `data` 为空，仅返回统一信封：
+```json
+{ "code": 200, "message": "success" }
+```
+
 #### 全部已读
 ```
 PUT /api/messages/read-all
+```
+
+**Response** `data` 为空，仅返回统一信封：
+```json
+{ "code": 200, "message": "success" }
 ```
 
 ---
@@ -484,6 +529,11 @@ GET /api/coupons/available
 POST /api/coupons/claim/{id}
 ```
 
+**Response** `data` 为空，仅返回统一信封：
+```json
+{ "code": 200, "message": "领取成功" }
+```
+
 #### 秒杀优惠券
 ```
 POST /api/coupons/flash/{id}
@@ -497,6 +547,11 @@ if stock < 0 then
   return -1
 end
 return stock
+```
+
+**Response** `data` 为空，仅返回统一信封：
+```json
+{ "code": 200, "message": "秒杀成功" }
 ```
 
 #### 我的优惠券
@@ -586,6 +641,11 @@ POST /api/user/logout
 1. 根据 JWT 中的 `userId` 清除 Redis session：`DEL session:{userId}`
 2. 前端清除 localStorage 中的 `token` 和 `user`
 
+**Response** `data` 为空，仅返回统一信封：
+```json
+{ "code": 200, "message": "退出成功" }
+```
+
 ---
 
 ## 三、管理端接口（需 Admin JWT）
@@ -627,6 +687,22 @@ GET /api/admin/dashboard
 | PUT | `/api/admin/parking-lots/{id}` | 编辑 |
 | DELETE | `/api/admin/parking-lots/{id}` | 删除 |
 
+**GET Response `data`**
+```json
+[
+  {
+    "id": 1,
+    "name": "科技园停车场",
+    "address": "南山区科技南路100号",
+    "totalSpots": 100,
+    "availableSpots": 45,
+    "longitude": 113.95,
+    "latitude": 22.54,
+    "status": 1
+  }
+]
+```
+
 **新增/编辑 Request**
 ```json
 { "name": "新停车场", "address": "地址", "totalSpots": 100, "longitude": 113.95, "latitude": 22.54, "status": 1 }
@@ -645,6 +721,14 @@ GET /api/admin/dashboard
 | DELETE | `/api/admin/parking-spots/{id}` | 删除 |
 | PUT | `/api/admin/parking-spots/{id}` | 编辑 |
 
+**GET Response `data`**
+```json
+[
+  { "id": 1, "spotNumber": "A01", "type": 0, "status": 1 },
+  { "id": 2, "spotNumber": "A02", "type": 2, "status": 0 }
+]
+```
+
 **批量新增 Request**
 ```json
 { "lotId": 1, "spotNumbers": ["E01", "E02", "E03"], "type": 0 }
@@ -662,6 +746,24 @@ GET /api/admin/dashboard
 | POST | `/api/admin/coupons` | 新增 |
 | PUT | `/api/admin/coupons/{id}` | 编辑 |
 | DELETE | `/api/admin/coupons/{id}` | 删除 |
+
+**GET Response `data`**
+```json
+[
+  {
+    "id": 1,
+    "name": "满20减5",
+    "description": "停车优惠",
+    "discountAmount": 5,
+    "minAmount": 20,
+    "type": 0,
+    "stock": 100,
+    "remainStock": 88,
+    "startTime": "2026-06-01",
+    "endTime": "2026-12-31"
+  }
+]
+```
 
 **新增/编辑 Request**
 ```json
@@ -688,6 +790,34 @@ GET /api/admin/dashboard
 | GET | `/api/admin/users` | 用户列表 |
 | GET | `/api/admin/users/{id}` | 用户详情 |
 
+**GET 列表 Response `data`**
+```json
+[
+  {
+    "id": 1,
+    "username": "张三",
+    "phone": "13800138000",
+    "vehicles": 2,
+    "orderCount": 15,
+    "balance": 128.50,
+    "createTime": "2026-01-15 10:00"
+  }
+]
+```
+
+**GET 详情 Response `data`**
+```json
+{
+  "id": 1,
+  "username": "张三",
+  "phone": "13800138000",
+  "vehicles": 2,
+  "orderCount": 15,
+  "balance": 128.50,
+  "createTime": "2026-01-15 10:00"
+}
+```
+
 ---
 
 ### 3.6 管理员管理
@@ -696,6 +826,14 @@ GET /api/admin/dashboard
 |--------|------|------|
 | GET | `/api/admin/admins` | 列表 |
 | POST | `/api/admin/admins` | 新增 |
+
+**GET Response `data`**
+```json
+[
+  { "id": 1, "username": "admin", "role": "super", "createTime": "2026-01-01 00:00" },
+  { "id": 2, "username": "operator1", "role": "operator", "createTime": "2026-06-01 12:00" }
+]
+```
 
 **新增管理员 Request**
 ```json
@@ -714,6 +852,11 @@ PUT /api/admin/profile
 { "username": "admin", "oldPassword": "", "newPassword": "123456" }
 ```
 
+**Response** `data` 为空，仅返回统一信封：
+```json
+{ "code": 200, "message": "修改成功" }
+```
+
 ---
 
 ### 3.8 退出登录
@@ -726,6 +869,11 @@ POST /api/admin/logout
 **后端逻辑**
 1. 根据 JWT 中的 `adminId` 清除 Redis admin session：`DEL admin:session:{adminId}`
 2. 前端清除 localStorage 中的 `adminToken` 和 `adminUser`
+
+**Response** `data` 为空，仅返回统一信封：
+```json
+{ "code": 200, "message": "退出成功" }
+```
 
 ---
 
