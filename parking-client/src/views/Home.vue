@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useParkingStore } from '../stores/parking'
 import ParkingLotCard from '../components/ParkingLotCard.vue'
+import NearbyMap from '../components/NearbyMap.vue'
 
 const router = useRouter()
 const parkingStore = useParkingStore()
@@ -70,6 +71,14 @@ function goDetail(id: number) {
         @input="onSearch"
       />
     </div>
+
+    <NearbyMap
+      v-if="filteredLots.length"
+      :lots="filteredLots"
+      :center-lng="113.95"
+      :center-lat="22.54"
+      @select="goDetail"
+    />
 
     <div class="section-title">
       <div class="section-left">
