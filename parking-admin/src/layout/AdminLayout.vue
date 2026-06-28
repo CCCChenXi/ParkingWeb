@@ -2,14 +2,15 @@
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import SideMenu from './SideMenu.vue'
+import { useAdminStore } from '../stores/admin'
 
 const router = useRouter()
+const adminStore = useAdminStore()
 
 function handleLogout() {
   ElMessageBox.confirm('确认退出登录？', '提示', { confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning' })
-    .then(() => {
-      localStorage.removeItem('adminToken')
-      localStorage.removeItem('adminUser')
+    .then(async () => {
+      await adminStore.logout()
       router.push('/login')
     })
     .catch(() => {})

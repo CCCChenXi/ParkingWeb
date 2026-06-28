@@ -39,10 +39,7 @@ request.interceptors.response.use(
     const data = error.response?.data
     const backendMsg = data?.message
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      window.location.href = '/#/login'
-      ElMessage.error(backendMsg || '登录已过期，请重新登录')
+      window.dispatchEvent(new CustomEvent('auth:unauthorized'))
     } else if (error.response?.status === 403) {
       ElMessage.error(backendMsg || '无权限访问，请联系管理员')
     } else if (!isAuthEndpoint(error.config?.url)) {

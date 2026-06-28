@@ -39,13 +39,23 @@ export const useParkingStore = defineStore('parking', () => {
   }
 
   async function fetchLotDetail(id: number) {
-    const res: any = await getParkingLotDetail(id)
-    currentLot.value = res.data
+    loading.value = true
+    try {
+      const res: any = await getParkingLotDetail(id)
+      currentLot.value = res.data
+    } finally {
+      loading.value = false
+    }
   }
 
   async function fetchSpots(lotId: number) {
-    const res: any = await getParkingSpots(lotId)
-    spots.value = res.data || []
+    loading.value = true
+    try {
+      const res: any = await getParkingSpots(lotId)
+      spots.value = res.data || []
+    } finally {
+      loading.value = false
+    }
   }
 
   return {

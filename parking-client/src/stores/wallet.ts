@@ -18,10 +18,16 @@ export interface WalletLog {
 export const useWalletStore = defineStore('wallet', () => {
   const wallet = ref<WalletInfo | null>(null)
   const logs = ref<WalletLog[]>([])
+  const loading = ref(false)
 
   async function fetchWallet() {
-    const res: any = await getWallet()
-    wallet.value = res.data
+    loading.value = true
+    try {
+      const res: any = await getWallet()
+      wallet.value = res.data
+    } finally {
+      loading.value = false
+    }
   }
 
   async function doRecharge(amount: number) {
@@ -31,13 +37,19 @@ export const useWalletStore = defineStore('wallet', () => {
   }
 
   async function fetchLogs() {
-    const res: any = await getWalletLogs()
-    logs.value = res.data || []
+    loading.value = true
+    try {
+      const res: any = await getWalletLogs()
+      logs.value = res.data || []
+    } finally {
+      loading.value = false
+    }
   }
 
   return {
     wallet,
     logs,
+    loading,
     fetchWallet,
     doRecharge,
     fetchLogs

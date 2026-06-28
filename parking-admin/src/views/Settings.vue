@@ -1,22 +1,39 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { updateAdminProfile } from '../api/admin'
+import { useAdminStore } from '../stores/admin'
+
+const adminStore = useAdminStore()
 
 const form = ref({
-  username: 'admin',
+  username: adminStore.adminInfo?.username || 'admin',
   oldPassword: '',
   newPassword: '',
   confirmPassword: ''
 })
 
-onMounted(() => {})
+const saving = ref(false)
 
-function handleSave() {
+async function handleSave() {
   if (form.value.newPassword && form.value.newPassword !== form.value.confirmPassword) {
     ElMessage.warning('两次密码不一致')
     return
   }
-  ElMessage.success('修改成功')
+  if (!form.value.oldPassword) {
+    ElMessage.warning('请输入原密码')
+    return
+  }
+  saving.value = true
+  try {
+    await updateAdminProfile({ oldPassword: form.value.oldPassword, newPassword: form.value.newPassword })
+    ElMessage.success('修改成功')
+    form.value.oldPassword = ''
+    form.value.newPassword = ''
+    form.value.confirmPassword = ''
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 
@@ -42,7 +59,7 @@ function handleSave() {
           <el-input v-model="form.confirmPassword" type="password" show-password placeholder="请再次输入新密码" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleSave">保存修改</el-button>
+          <el-button type="primary" :loading="saving" @click="handleSave">保存修改</el-button>
         </el-form-item>
       </el-form>
     </div>

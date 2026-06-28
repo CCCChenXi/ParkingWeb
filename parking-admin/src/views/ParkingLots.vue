@@ -1,26 +1,33 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { getParkingLots, createParkingLot, updateParkingLot, deleteParkingLot } from '../api/admin'
 
 const router = useRouter()
 
-const lots = ref([
-  { id: 1, name: '科技园停车场', address: '南山区科技南路100号', totalSpots: 100, availableSpots: 45, status: 1 },
-  { id: 2, name: '万象天地停车场', address: '南山区深南大道200号', totalSpots: 50, availableSpots: 12, status: 1 },
-  { id: 3, name: '华强北停车场', address: '福田区华强北路50号', totalSpots: 80, availableSpots: 33, status: 1 },
-  { id: 4, name: '海岸城停车场', address: '南山区文心五路33号', totalSpots: 120, availableSpots: 8, status: 0 },
-  { id: 5, name: '车公庙停车场', address: '福田区泰然九路', totalSpots: 60, availableSpots: 27, status: 1 },
-  { id: 6, name: '市民中心停车场', address: '福田区福中三路', totalSpots: 200, availableSpots: 0, status: 1 }
-])
-
+const loading = ref(false)
+const lots = ref<any[]>([])
 const showDialog = ref(false)
 const isEdit = ref(false)
-const form = ref({ id: 0, name: '', address: '', totalSpots: 0, status: 1 })
+const form = ref({ id: 0, name: '', address: '', totalSpots: 0, longitude: 0, latitude: 0, status: 1 })
+const saving = ref(false)
+
+async function fetchLots() {
+  loading.value = true
+  try {
+    const res = await getParkingLots()
+    lots.value = res.data || []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchLots)
 
 function openAdd() {
   isEdit.value = false
-  form.value = { id: 0, name: '', address: '', totalSpots: 0, status: 1 }
+  form.value = { id: 0, name: '', address: '', totalSpots: 0, longitude: 0, latitude: 0, status: 1 }
   showDialog.value = true
 }
 
@@ -30,28 +37,34 @@ function openEdit(row: any) {
   showDialog.value = true
 }
 
-function handleDelete(id: number) {
-  ElMessageBox.confirm('确认删除此停车场？', '提示', { confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning' })
-    .then(() => {
-      lots.value = lots.value.filter(l => l.id !== id)
-      ElMessage.success('删除成功')
-    })
-    .catch(() => {})
+async function handleDelete(id: number) {
+  try {
+    await ElMessageBox.confirm('确认删除此停车场？', '提示', { confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning' })
+    await deleteParkingLot(id)
+    ElMessage.success('删除成功')
+    await fetchLots()
+  } catch {}
 }
 
-function handleSave() {
+async function handleSave() {
   if (!form.value.name || !form.value.address) {
     ElMessage.warning('请填写完整信息')
     return
   }
-  if (isEdit.value) {
-    const idx = lots.value.findIndex(l => l.id === form.value.id)
-    if (idx > -1) lots.value[idx] = { ...form.value, availableSpots: form.value.totalSpots }
-  } else {
-    lots.value.push({ id: Date.now(), name: form.value.name, address: form.value.address, totalSpots: form.value.totalSpots, status: form.value.status, availableSpots: form.value.totalSpots })
+  saving.value = true
+  try {
+    if (isEdit.value) {
+      await updateParkingLot(form.value.id, form.value)
+      ElMessage.success('修改成功')
+    } else {
+      await createParkingLot(form.value)
+      ElMessage.success('添加成功')
+    }
+    showDialog.value = false
+    await fetchLots()
+  } finally {
+    saving.value = false
   }
-  showDialog.value = false
-  ElMessage.success(isEdit.value ? '修改成功' : '添加成功')
 }
 
 function viewSpots(lotId: number) {
@@ -66,7 +79,7 @@ function viewSpots(lotId: number) {
       <el-button type="primary" @click="openAdd">+ 新增停车场</el-button>
     </div>
 
-    <div class="card">
+    <div class="card" v-loading="loading">
       <el-table :data="lots" stripe style="width: 100%">
         <el-table-column type="index" label="序号" width="60" />
         <el-table-column prop="name" label="名称" min-width="150" />
@@ -107,7 +120,7 @@ function viewSpots(lotId: number) {
       </el-form>
       <template #footer>
         <el-button @click="showDialog = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">确认</el-button>
+        <el-button type="primary" :loading="saving" @click="handleSave">确认</el-button>
       </template>
     </el-dialog>
   </div>

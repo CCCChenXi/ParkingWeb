@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, watch, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
+
+const redirect = (route.query.redirect as string) || '/home'
 
 const isRegister = ref(false)
 const username = ref('')
@@ -80,11 +83,11 @@ async function handleSubmit() {
     if (isRegister.value) {
       await userStore.register(username.value, password.value, phone.value, code.value)
       ElMessage.success('注册成功')
-      router.push('/home')
+      router.push(redirect)
     } else {
       await userStore.login(username.value, password.value)
       ElMessage.success('登录成功')
-      router.push('/home')
+      router.push(redirect)
     }
   } catch {
     // 错误信息已由全局拦截器展示

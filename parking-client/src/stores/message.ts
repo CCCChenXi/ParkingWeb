@@ -13,12 +13,18 @@ export interface MessageInfo {
 
 export const useMessageStore = defineStore('message', () => {
   const messages = ref<MessageInfo[]>([])
+  const loading = ref(false)
 
   const unreadCount = computed(() => messages.value.filter(m => m.isRead === 0).length)
 
   async function fetchMessages() {
-    const res: any = await getMessages()
-    messages.value = res.data || []
+    loading.value = true
+    try {
+      const res: any = await getMessages()
+      messages.value = res.data || []
+    } finally {
+      loading.value = false
+    }
   }
 
   async function markRead(id: number) {
@@ -34,6 +40,7 @@ export const useMessageStore = defineStore('message', () => {
 
   return {
     messages,
+    loading,
     unreadCount,
     fetchMessages,
     markRead,

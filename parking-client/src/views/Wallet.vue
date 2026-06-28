@@ -22,7 +22,7 @@ async function onRecharged(amount: number) {
 </script>
 
 <template>
-  <div class="page">
+  <div v-loading="walletStore.loading" class="page">
     <div class="back-header" @click="router.back()">
       <el-icon :size="20"><ArrowLeft /></el-icon>
       <span class="back-text">钱包</span>

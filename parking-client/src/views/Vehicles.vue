@@ -48,7 +48,7 @@ async function handleSubmit() {
   showDialog.value = false
   try {
     if (editingVehicle.value) {
-      await userStore.updateProfile({ vehicleId: editingVehicle.value.id, ...form.value })
+      await userStore.editVehicle(editingVehicle.value.id, form.value)
       ElMessage.success('修改成功')
     } else {
       await userStore.addNewVehicle(form.value)

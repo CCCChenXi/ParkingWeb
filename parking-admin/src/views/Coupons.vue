@@ -1,23 +1,30 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { getCoupons, createCoupon, updateCoupon, deleteCoupon } from '../api/admin'
 
-const coupons = ref([
-  { id: 1, name: '新用户专享', description: '满10减5停车优惠券', discountAmount: 5, minAmount: 10, type: 0, stock: 100, remainStock: 88, startTime: '2026-06-01', endTime: '2026-12-31' },
-  { id: 2, name: '周末特惠', description: '满20减8停车优惠券', discountAmount: 8, minAmount: 20, type: 0, stock: 50, remainStock: 32, startTime: '2026-06-01', endTime: '2026-12-31' },
-  { id: 3, name: '秒杀-1折停车', description: '全场1折停车，最高减50元', discountAmount: 50, minAmount: 1, type: 1, stock: 10, remainStock: 2, startTime: '2026-06-23 10:00', endTime: '2026-06-23 22:00' },
-  { id: 4, name: '满30减10', description: '满30减10停车优惠', discountAmount: 10, minAmount: 30, type: 0, stock: 200, remainStock: 145, startTime: '2026-06-15', endTime: '2026-08-15' }
-])
-
+const loading = ref(false)
+const coupons = ref<any[]>([])
 const showDialog = ref(false)
 const isEdit = ref(false)
 const form = ref<any>({})
+const saving = ref(false)
 
-onMounted(() => {})
+async function fetchCoupons() {
+  loading.value = true
+  try {
+    const res = await getCoupons()
+    coupons.value = res.data || []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchCoupons)
 
 function openAdd() {
   isEdit.value = false
-  form.value = { id: 0, name: '', description: '', discountAmount: 0, minAmount: 0, type: 0, stock: 100, remainStock: 0, startTime: '', endTime: '' }
+  form.value = { id: 0, name: '', description: '', discountAmount: 0, minAmount: 0, type: 0, stock: 100, startTime: '', endTime: '' }
   showDialog.value = true
 }
 
@@ -27,28 +34,34 @@ function openEdit(row: any) {
   showDialog.value = true
 }
 
-function handleDelete(id: number) {
-  ElMessageBox.confirm('确认删除此优惠券？', '提示', { confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning' })
-    .then(() => {
-      coupons.value = coupons.value.filter(c => c.id !== id)
-      ElMessage.success('删除成功')
-    })
-    .catch(() => {})
+async function handleDelete(id: number) {
+  try {
+    await ElMessageBox.confirm('确认删除此优惠券？', '提示', { confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning' })
+    await deleteCoupon(id)
+    ElMessage.success('删除成功')
+    await fetchCoupons()
+  } catch {}
 }
 
-function handleSave() {
+async function handleSave() {
   if (!form.value.name || !form.value.discountAmount) {
     ElMessage.warning('请填写完整信息')
     return
   }
-  if (isEdit.value) {
-    const idx = coupons.value.findIndex(c => c.id === form.value.id)
-    if (idx > -1) coupons.value[idx] = { ...form.value }
-  } else {
-    coupons.value.push({ ...form.value, id: Date.now(), remainStock: form.value.stock })
+  saving.value = true
+  try {
+    if (isEdit.value) {
+      await updateCoupon(form.value.id, form.value)
+      ElMessage.success('修改成功')
+    } else {
+      await createCoupon(form.value)
+      ElMessage.success('添加成功')
+    }
+    showDialog.value = false
+    await fetchCoupons()
+  } finally {
+    saving.value = false
   }
-  showDialog.value = false
-  ElMessage.success(isEdit.value ? '修改成功' : '添加成功')
 }
 </script>
 
@@ -59,7 +72,7 @@ function handleSave() {
       <el-button type="primary" @click="openAdd">+ 新增优惠券</el-button>
     </div>
 
-    <div class="card">
+    <div class="card" v-loading="loading">
       <el-table :data="coupons" stripe style="width: 100%">
         <el-table-column type="index" label="序号" width="60" />
         <el-table-column prop="name" label="名称" min-width="140" />
@@ -132,7 +145,7 @@ function handleSave() {
       </el-form>
       <template #footer>
         <el-button @click="showDialog = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">确认</el-button>
+        <el-button type="primary" :loading="saving" @click="handleSave">确认</el-button>
       </template>
     </el-dialog>
   </div>

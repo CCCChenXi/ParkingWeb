@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { logout as apiLogout } from '../api/admin'
 
 export const useAdminStore = defineStore('admin', () => {
   const adminInfo = ref<any>(JSON.parse(localStorage.getItem('adminUser') || 'null'))
@@ -9,7 +10,8 @@ export const useAdminStore = defineStore('admin', () => {
     localStorage.setItem('adminUser', JSON.stringify(info))
   }
 
-  function logout() {
+  async function logout() {
+    try { await apiLogout() } catch {}
     adminInfo.value = null
     localStorage.removeItem('adminToken')
     localStorage.removeItem('adminUser')

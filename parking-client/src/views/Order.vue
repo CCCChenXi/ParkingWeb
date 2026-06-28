@@ -28,7 +28,7 @@ function onTabChange(key: string) {
 </script>
 
 <template>
-  <div class="page">
+  <div v-loading="orderStore.loading" class="page">
     <div class="page-title">我的订单</div>
 
     <div class="order-tabs">

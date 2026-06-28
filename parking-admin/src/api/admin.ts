@@ -4,6 +4,10 @@ export function login(data: { username: string; password: string }) {
   return request.post('/admin/login', data)
 }
 
+export function logout() {
+  return request.post('/admin/logout')
+}
+
 export function getDashboard() {
   return request.get('/admin/dashboard')
 }

@@ -30,7 +30,7 @@ async function handleClaim(id: number, type: number) {
 </script>
 
 <template>
-  <div class="page">
+  <div v-loading="couponStore.loading" class="page">
     <div class="back-header" @click="router.back()">
       <el-icon :size="20"><ArrowLeft /></el-icon>
       <span class="back-text">优惠券</span>

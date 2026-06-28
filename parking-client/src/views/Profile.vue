@@ -6,9 +6,15 @@ import { ElMessageBox, ElMessage } from 'element-plus'
 
 const router = useRouter()
 const userStore = useUserStore()
+const loading = ref(false)
 
-onMounted(() => {
-  userStore.fetchProfile()
+onMounted(async () => {
+  loading.value = true
+  try {
+    await userStore.fetchProfile()
+  } finally {
+    loading.value = false
+  }
 })
 
 const menuItems = [
@@ -41,14 +47,16 @@ function openEdit() {
 }
 
 async function handleUpdate() {
-  await userStore.updateProfile({ phone: editForm.phone, avatar: editForm.avatar })
-  ElMessage.success('保存成功')
-  showEdit.value = false
+  try {
+    await userStore.updateProfile({ phone: editForm.phone, avatar: editForm.avatar })
+    ElMessage.success('保存成功')
+    showEdit.value = false
+  } catch {}
 }
 </script>
 
 <template>
-  <div class="page">
+  <div v-loading="loading" class="page">
     <div class="profile-header">
       <div class="avatar">
         <el-icon :size="48" color="#fff"><UserFilled /></el-icon>

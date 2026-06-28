@@ -3,11 +3,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useParkingStore } from '../stores/parking'
 import ParkingLotCard from '../components/ParkingLotCard.vue'
-import { useUserStore } from '../stores/user'
 
 const router = useRouter()
 const parkingStore = useParkingStore()
-const userStore = useUserStore()
 
 const locationName = ref('获取位置中...')
 const searchQuery = ref('')
@@ -34,9 +32,6 @@ onMounted(() => {
   } else {
     parkingStore.fetchNearbyLots(113.95, 22.54)
   }
-  if (!userStore.isLoggedIn) {
-    router.push('/login')
-  }
 })
 
 function onSearch() {
@@ -49,7 +44,7 @@ function goDetail(id: number) {
 </script>
 
 <template>
-  <div class="page">
+  <div v-loading="parkingStore.loading" class="page">
     <div class="location-bar">
       <el-icon color="#409EFF"><LocationFilled /></el-icon>
       <span class="location-text">{{ locationName }}</span>

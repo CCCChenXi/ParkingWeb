@@ -1,51 +1,50 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import { getAdmins, createAdmin } from '../api/admin'
 
-const admins = ref([
-  { id: 1, username: 'admin', role: 'super', createTime: '2026-01-01' },
-  { id: 2, username: 'operator1', role: 'operator', createTime: '2026-02-15' },
-  { id: 3, username: 'operator2', role: 'operator', createTime: '2026-03-20' }
-])
+const loading = ref(false)
+const admins = ref<any[]>([])
 
 const showDialog = ref(false)
-const isEdit = ref(false)
-const form = ref({ id: 0, username: '', password: '', role: 'operator' })
+const form = ref({ username: '', password: '', role: 'operator' })
+const saving = ref(false)
 
-onMounted(() => {})
+async function fetchAdmins() {
+  loading.value = true
+  try {
+    const res = await getAdmins()
+    admins.value = res.data || []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchAdmins)
 
 function openAdd() {
-  isEdit.value = false
-  form.value = { id: 0, username: '', password: '', role: 'operator' }
+  form.value = { username: '', password: '', role: 'operator' }
   showDialog.value = true
 }
 
-function handleDelete(id: number) {
-  ElMessageBox.confirm('确认删除此管理员？', '提示', { confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning' })
-    .then(() => {
-      admins.value = admins.value.filter(a => a.id !== id)
-      ElMessage.success('删除成功')
-    })
-    .catch(() => {})
-}
-
-function handleSave() {
+async function handleSave() {
   if (!form.value.username) {
     ElMessage.warning('请填写用户名')
     return
   }
-  if (!isEdit.value && !form.value.password) {
+  if (!form.value.password) {
     ElMessage.warning('请填写密码')
     return
   }
-  if (isEdit.value) {
-    const idx = admins.value.findIndex(a => a.id === form.value.id)
-    if (idx > -1) admins.value[idx] = { id: form.value.id, username: form.value.username, role: form.value.role, createTime: admins.value[idx].createTime }
-  } else {
-    admins.value.push({ id: Date.now(), username: form.value.username, role: form.value.role, createTime: new Date().toISOString().slice(0, 10) })
+  saving.value = true
+  try {
+    await createAdmin(form.value)
+    ElMessage.success('添加成功')
+    showDialog.value = false
+    await fetchAdmins()
+  } finally {
+    saving.value = false
   }
-  showDialog.value = false
-  ElMessage.success(isEdit.value ? '修改成功' : '添加成功')
 }
 </script>
 
@@ -56,7 +55,7 @@ function handleSave() {
       <el-button type="primary" @click="openAdd">+ 新增管理员</el-button>
     </div>
 
-    <div class="card">
+    <div class="card" v-loading="loading">
       <el-table :data="admins" stripe style="width: 100%">
         <el-table-column type="index" label="序号" width="60" />
         <el-table-column prop="username" label="用户名" min-width="150" />
@@ -68,20 +67,15 @@ function handleSave() {
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" min-width="140" />
-        <el-table-column label="操作" width="160">
-          <template #default="{ row }">
-            <el-button size="small" type="danger" @click="handleDelete(row.id)">删除</el-button>
-          </template>
-        </el-table-column>
       </el-table>
     </div>
 
-    <el-dialog v-model="showDialog" :title="isEdit ? '编辑管理员' : '新增管理员'" width="450px" destroy-on-close>
+    <el-dialog v-model="showDialog" title="新增管理员" width="450px" destroy-on-close>
       <el-form :model="form" label-width="100px">
         <el-form-item label="用户名">
           <el-input v-model="form.username" placeholder="请输入用户名" />
         </el-form-item>
-        <el-form-item label="密码" v-if="!isEdit">
+        <el-form-item label="密码">
           <el-input v-model="form.password" type="password" placeholder="请输入密码" show-password />
         </el-form-item>
         <el-form-item label="角色">
@@ -93,7 +87,7 @@ function handleSave() {
       </el-form>
       <template #footer>
         <el-button @click="showDialog = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">确认</el-button>
+        <el-button type="primary" :loading="saving" @click="handleSave">确认</el-button>
       </template>
     </el-dialog>
   </div>

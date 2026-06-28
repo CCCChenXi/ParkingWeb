@@ -57,7 +57,7 @@ async function onReserve(data: { plateNumber: string; couponId?: number }) {
 </script>
 
 <template>
-  <div class="page">
+  <div v-loading="parkingStore.loading" class="page">
     <div class="back-header" @click="router.back()">
       <el-icon :size="20"><ArrowLeft /></el-icon>
       <span class="back-text">{{ lotInfo.name }}</span>

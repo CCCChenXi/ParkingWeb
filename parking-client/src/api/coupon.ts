@@ -13,5 +13,5 @@ export function flashSaleCoupon(id: number) {
 }
 
 export function getUserCoupons() {
-  return request.get('/user/coupons')
+  return request.get('/coupons', { params: { scope: 'mine' } })
 }

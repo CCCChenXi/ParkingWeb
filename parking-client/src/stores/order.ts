@@ -20,14 +20,20 @@ export interface OrderInfo {
 
 export const useOrderStore = defineStore('order', () => {
   const orders = ref<OrderInfo[]>([])
+  const loading = ref(false)
 
   const reservedOrders = computed(() => orders.value.filter(o => o.status === 0))
   const activeOrders = computed(() => orders.value.filter(o => o.status === 1))
   const settledOrders = computed(() => orders.value.filter(o => o.status === 2))
 
   async function fetchOrders(status?: number) {
-    const res: any = await getOrders(status !== undefined ? { status } : undefined)
-    orders.value = res.data || []
+    loading.value = true
+    try {
+      const res: any = await getOrders(status !== undefined ? { status } : undefined)
+      orders.value = res.data || []
+    } finally {
+      loading.value = false
+    }
   }
 
   async function reserve(data: { lotId: number; spotId: number; plateNumber: string; couponId?: number }) {
@@ -54,6 +60,7 @@ export const useOrderStore = defineStore('order', () => {
 
   return {
     orders,
+    loading,
     reservedOrders,
     activeOrders,
     settledOrders,

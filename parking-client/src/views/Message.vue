@@ -19,7 +19,7 @@ function markAllRead() {
 </script>
 
 <template>
-  <div class="page">
+  <div v-loading="messageStore.loading" class="page">
     <div class="flex-between" style="margin-bottom: 16px;">
       <div class="page-title" style="margin-bottom: 0;">消息</div>
       <el-button text type="primary" size="small" @click="markAllRead">

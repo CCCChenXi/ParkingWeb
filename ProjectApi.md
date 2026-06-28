@@ -35,6 +35,7 @@ Header: Authorization: Bearer <token>
 ```
 POST   /api/user/login
 POST   /api/user/register
+POST   /api/user/send-code
 POST   /api/admin/login
 GET    /api/parking-lots/nearby
 GET    /api/parking-lots/{id}
@@ -52,12 +53,15 @@ POST /api/user/register
 
 **Request**
 ```json
-{ "username": "张三", "password": "123456", "phone": "13800138000" }
+{ "username": "张三", "password": "123456", "phone": "13800138000", "code": "123456" }
 ```
 
 **Response `data`**
 ```json
-{ "id": 1, "username": "张三", "phone": "13800138000" }
+{
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "user": { "id": 1, "username": "张三", "phone": "13800138000", "avatar": "" }
+}
 ```
 
 ---
@@ -91,7 +95,7 @@ GET /api/parking-lots/nearby?longitude=113.95&latitude=22.54&radius=5000
 |------|------|------|------|
 | longitude | number | — | 当前经度 |
 | latitude | number | — | 当前纬度 |
-| radius | number | 5000 | 搜索半径（米） |
+| radius | number | 5000 | 搜索半径（米），可选 |
 
 **Response `data`**
 ```json
@@ -179,6 +183,21 @@ POST /api/admin/login
 }
 ```
 
+### 1.7 发送验证码
+```
+POST /api/user/send-code
+```
+
+**Request**
+```json
+{ "phone": "13800138000" }
+```
+
+**后端逻辑**
+1. 生成 6 位随机验证码
+2. 存入 Redis：`SETEX sms:code:{phone} 300 {code}`（5 分钟有效）
+3. 调用短信网关发送（对接第三方 SMS 服务）
+
 ---
 
 ## 二、客户端接口（需 JWT）
@@ -211,7 +230,7 @@ PUT /api/user/profile
 
 #### 车辆列表
 ```
-GET /api/user/vehicles
+GET /api/vehicles
 ```
 
 **Response `data`**
@@ -223,7 +242,7 @@ GET /api/user/vehicles
 
 #### 添加车辆
 ```
-POST /api/user/vehicles
+POST /api/vehicles
 ```
 
 **Request**
@@ -233,7 +252,7 @@ POST /api/user/vehicles
 
 #### 修改车辆
 ```
-PUT /api/user/vehicles/{id}
+PUT /api/vehicles/{id}
 ```
 
 **Request**
@@ -243,7 +262,7 @@ PUT /api/user/vehicles/{id}
 
 #### 删除车辆
 ```
-DELETE /api/user/vehicles/{id}
+DELETE /api/vehicles/{id}
 ```
 
 ---
@@ -318,6 +337,24 @@ GET /api/orders?status=0
 #### 订单详情
 ```
 GET /api/orders/{id}
+```
+
+**Response `data`**
+```json
+{
+  "id": 1,
+  "orderNo": "ORD20260623001",
+  "lotId": 1,
+  "lotName": "科技园停车场",
+  "spotNumber": "A01",
+  "plateNumber": "粤B·88888",
+  "status": 0,
+  "startTime": "",
+  "endTime": "",
+  "amount": 0,
+  "discount": 0,
+  "createTime": "2026-06-23 14:30"
+}
 ```
 
 #### 确认入场
@@ -464,7 +501,7 @@ return stock
 
 #### 我的优惠券
 ```
-GET /api/user/coupons
+GET /api/coupons?scope=mine
 ```
 
 **Response `data`**
@@ -538,6 +575,19 @@ GET /api/wallet/logs
 
 ---
 
+### 2.7 退出登录
+
+#### 用户退出
+```
+POST /api/user/logout
+```
+
+**后端逻辑**
+1. 根据 JWT 中的 `userId` 清除 Redis session：`DEL session:{userId}`
+2. 前端清除 localStorage 中的 `token` 和 `user`
+
+---
+
 ## 三、管理端接口（需 Admin JWT）
 
 ### 3.1 仪表盘
@@ -592,8 +642,8 @@ GET /api/admin/dashboard
 |--------|------|------|
 | GET | `/api/admin/parking-lots/{lotId}/spots` | 某停车场车位列表 |
 | POST | `/api/admin/parking-spots` | 批量新增 |
-| PUT | `/api/admin/parking-spots/{id}` | 编辑 |
 | DELETE | `/api/admin/parking-spots/{id}` | 删除 |
+| PUT | `/api/admin/parking-spots/{id}` | 编辑 |
 
 **批量新增 Request**
 ```json
@@ -663,6 +713,19 @@ PUT /api/admin/profile
 ```json
 { "username": "admin", "oldPassword": "", "newPassword": "123456" }
 ```
+
+---
+
+### 3.8 退出登录
+
+#### 管理员退出
+```
+POST /api/admin/logout
+```
+
+**后端逻辑**
+1. 根据 JWT 中的 `adminId` 清除 Redis admin session：`DEL admin:session:{adminId}`
+2. 前端清除 localStorage 中的 `adminToken` 和 `adminUser`
 
 ---
 

@@ -12,6 +12,10 @@ export function register(data: { username: string; password: string; phone: stri
   return request.post('/user/register', data)
 }
 
+export function logout() {
+  return request.post('/user/logout')
+}
+
 export function getUserProfile() {
   return request.get('/user/profile')
 }
@@ -21,17 +25,17 @@ export function updateUserProfile(data: any) {
 }
 
 export function getVehicles() {
-  return request.get('/user/vehicles')
+  return request.get('/vehicles')
 }
 
 export function addVehicle(data: { plateNumber: string; brand: string; color: string }) {
-  return request.post('/user/vehicles', data)
+  return request.post('/vehicles', data)
 }
 
 export function updateVehicle(id: number, data: any) {
-  return request.put(`/user/vehicles/${id}`, data)
+  return request.put(`/vehicles/${id}`, data)
 }
 
 export function deleteVehicle(id: number) {
-  return request.delete(`/user/vehicles/${id}`)
+  return request.delete(`/vehicles/${id}`)
 }

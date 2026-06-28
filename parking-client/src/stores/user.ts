@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { login as apiLogin, register as apiRegister, sendCode as apiSendCode, getUserProfile, updateUserProfile, getVehicles, addVehicle, deleteVehicle } from '../api/user'
+import { login as apiLogin, register as apiRegister, sendCode as apiSendCode, getUserProfile, updateUserProfile, getVehicles, addVehicle, updateVehicle as apiUpdateVehicle, deleteVehicle, logout as apiLogout } from '../api/user'
 
 export interface Vehicle {
   id: number
@@ -53,7 +53,8 @@ export const useUserStore = defineStore('user', () => {
     return res
   }
 
-  function logout() {
+  async function logout() {
+    try { await apiLogout() } catch {}
     token.value = ''
     userInfo.value = null
     vehicles.value = []
@@ -89,6 +90,11 @@ export const useUserStore = defineStore('user', () => {
     await fetchVehicles()
   }
 
+  async function editVehicle(id: number, data: { plateNumber: string; brand: string; color: string }) {
+    await apiUpdateVehicle(id, data)
+    await fetchVehicles()
+  }
+
   async function removeVehicle(id: number) {
     await deleteVehicle(id)
     vehicles.value = vehicles.value.filter(v => v.id !== id)
@@ -108,6 +114,7 @@ export const useUserStore = defineStore('user', () => {
     updateProfile,
     fetchVehicles,
     addNewVehicle,
+    editVehicle,
     removeVehicle
   }
 })

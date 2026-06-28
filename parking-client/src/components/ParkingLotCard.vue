@@ -36,7 +36,7 @@ defineProps<{
       </div>
     </div>
     <div class="progress-bar">
-      <div class="progress-fill" :style="{ width: ((lot.totalSpots - lot.availableSpots) / lot.totalSpots * 100) + '%' }" />
+      <div class="progress-fill" :style="{ width: (lot.totalSpots ? ((lot.totalSpots - lot.availableSpots) / lot.totalSpots * 100) : 0) + '%' }" />
     </div>
   </div>
 </template>

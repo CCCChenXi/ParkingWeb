@@ -1,53 +1,42 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { getDashboard } from '../api/admin'
 
-const stats = ref([
-  { label: '停车场总数', value: '12', icon: 'OfficeBuilding', color: '#409EFF' },
-  { label: '车位总数', value: '350', icon: 'Grid', color: '#67C23A' },
-  { label: '今日订单', value: '128', icon: 'Document', color: '#E6A23C' },
-  { label: '今日收入', value: '¥5,200', icon: 'Money', color: '#F56C6C' }
-])
+const loading = ref(false)
+const data = ref<any>(null)
 
-const orderTrend = ref([
-  { date: '06/17', orders: 85 },
-  { date: '06/18', orders: 92 },
-  { date: '06/19', orders: 78 },
-  { date: '06/20', orders: 110 },
-  { date: '06/21', orders: 95 },
-  { date: '06/22', orders: 120 },
-  { date: '06/23', orders: 128 }
-])
+onMounted(async () => {
+  loading.value = true
+  try {
+    const res = await getDashboard()
+    data.value = res.data
+  } finally {
+    loading.value = false
+  }
+})
 
-const revenueTrend = ref([
-  { date: '06/17', revenue: 3200 },
-  { date: '06/18', revenue: 3800 },
-  { date: '06/19', revenue: 2900 },
-  { date: '06/20', revenue: 4500 },
-  { date: '06/21', revenue: 4100 },
-  { date: '06/22', revenue: 4800 },
-  { date: '06/23', revenue: 5200 }
-])
+const stats = computed(() => data.value ? [
+  { label: '停车场总数', value: String(data.value.lotCount), icon: 'OfficeBuilding', color: '#409EFF' },
+  { label: '车位总数', value: String(data.value.spotCount), icon: 'Grid', color: '#67C23A' },
+  { label: '今日订单', value: String(data.value.todayOrders), icon: 'Document', color: '#E6A23C' },
+  { label: '今日收入', value: '¥' + (data.value.todayRevenue || 0).toLocaleString(), icon: 'Money', color: '#F56C6C' }
+] : [])
 
-const maxOrders = Math.max(...orderTrend.value.map(d => d.orders))
-const maxRevenue = Math.max(...revenueTrend.value.map(d => d.revenue))
+const orderTrend = computed(() => data.value?.orderTrend || [])
+const revenueTrend = computed(() => data.value?.revenueTrend || [])
+const recentOrders = computed(() => data.value?.recentOrders || [])
 
-const recentOrders = ref([
-  { id: 1, lotName: '科技园停车场', plate: '粤B·88888', status: '进行中', time: '10:15' },
-  { id: 2, lotName: '万象天地停车场', plate: '粤B·66666', status: '已预约', time: '10:30' },
-  { id: 3, lotName: '华强北停车场', plate: '粤B·12345', status: '已结算', time: '09:00' },
-  { id: 4, lotName: '海岸城停车场', plate: '粤B·77777', status: '已结算', time: '08:30' },
-  { id: 5, lotName: '科技园停车场', plate: '粤B·55555', status: '进行中', time: '11:00' }
-])
-
-onMounted(() => {})
+const maxOrders = computed(() => orderTrend.value.length ? Math.max(...orderTrend.value.map((d: any) => d.orders)) : 0)
+const maxRevenue = computed(() => revenueTrend.value.length ? Math.max(...revenueTrend.value.map((d: any) => d.revenue)) : 0)
 </script>
 
 <template>
-  <div>
+  <div v-loading="loading">
     <div class="page-header">
       <h2>数据仪表盘</h2>
     </div>
 
+    <template v-if="data">
     <div class="stat-grid">
       <div v-for="s in stats" :key="s.label" class="card stat-card">
         <div class="stat-icon" :style="{ background: s.color + '12', color: s.color }">
@@ -119,6 +108,8 @@ onMounted(() => {})
         <el-table-column prop="time" label="时间" />
       </el-table>
     </div>
+    </template>
+    <el-empty v-else-if="!loading" description="暂无数据" />
   </div>
 </template>
 

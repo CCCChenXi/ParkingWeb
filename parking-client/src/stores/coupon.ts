@@ -19,32 +19,54 @@ export interface CouponInfo {
 export const useCouponStore = defineStore('coupon', () => {
   const availableCoupons = ref<CouponInfo[]>([])
   const userCoupons = ref<CouponInfo[]>([])
+  const loading = ref(false)
 
   async function fetchAvailable() {
-    const res: any = await getAvailableCoupons()
-    availableCoupons.value = res.data || []
+    loading.value = true
+    try {
+      const res: any = await getAvailableCoupons()
+      availableCoupons.value = res.data || []
+    } finally {
+      loading.value = false
+    }
   }
 
   async function claim(id: number) {
-    const res: any = await claimCoupon(id)
-    await fetchUserCoupons()
-    return res
+    loading.value = true
+    try {
+      const res: any = await claimCoupon(id)
+      await fetchUserCoupons()
+      return res
+    } finally {
+      loading.value = false
+    }
   }
 
   async function flashSale(id: number) {
-    const res: any = await flashSaleCoupon(id)
-    await fetchUserCoupons()
-    return res
+    loading.value = true
+    try {
+      const res: any = await flashSaleCoupon(id)
+      await fetchUserCoupons()
+      return res
+    } finally {
+      loading.value = false
+    }
   }
 
   async function fetchUserCoupons() {
-    const res: any = await getUserCoupons()
-    userCoupons.value = res.data || []
+    loading.value = true
+    try {
+      const res: any = await getUserCoupons()
+      userCoupons.value = res.data || []
+    } finally {
+      loading.value = false
+    }
   }
 
   return {
     availableCoupons,
     userCoupons,
+    loading,
     fetchAvailable,
     claim,
     flashSale,
