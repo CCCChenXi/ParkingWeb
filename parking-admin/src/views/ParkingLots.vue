@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getParkingLots, createParkingLot, updateParkingLot, deleteParkingLot } from '../api/admin'
+import MapPicker from '../components/MapPicker.vue'
 
 const router = useRouter()
 
@@ -103,7 +104,7 @@ function viewSpots(lotId: number) {
       </el-table>
     </div>
 
-    <el-dialog v-model="showDialog" :title="isEdit ? '编辑停车场' : '新增停车场'" width="500px" destroy-on-close>
+    <el-dialog v-model="showDialog" :title="isEdit ? '编辑停车场' : '新增停车场'" width="640px" destroy-on-close>
       <el-form :model="form" label-width="100px">
         <el-form-item label="名称">
           <el-input v-model="form.name" placeholder="请输入停车场名称" />
@@ -116,6 +117,17 @@ function viewSpots(lotId: number) {
         </el-form-item>
         <el-form-item label="状态">
           <el-switch v-model="form.status" :active-value="1" :inactive-value="0" active-text="营业" inactive-text="关闭" />
+        </el-form-item>
+        <el-form-item label="经纬度">
+          <el-input :model-value="form.longitude ? form.longitude.toFixed(6) : ''" placeholder="点击地图选点" readonly style="width:180px;margin-right:8px">
+            <template #prepend>经度</template>
+          </el-input>
+          <el-input :model-value="form.latitude ? form.latitude.toFixed(6) : ''" placeholder="点击地图选点" readonly style="width:180px">
+            <template #prepend>纬度</template>
+          </el-input>
+        </el-form-item>
+        <el-form-item label="地图选点">
+          <MapPicker v-model:lng="form.longitude" v-model:lat="form.latitude" />
         </el-form-item>
       </el-form>
       <template #footer>
