@@ -10,6 +10,27 @@ const parkingStore = useParkingStore()
 const locationName = ref('获取位置中...')
 const searchQuery = ref('')
 
+const radiusOptions = [
+  { label: '1km', value: 1000 },
+  { label: '3km', value: 3000 },
+  { label: '5km', value: 5000 },
+  { label: '7km', value: 7000 },
+  { label: '10km', value: 10000 },
+  { label: '15km', value: 15000 }
+]
+const radius = ref(5000)
+
+function fetchWithRadius(r: number) {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { parkingStore.fetchNearbyLots(pos.coords.longitude, pos.coords.latitude, r) },
+      () => { parkingStore.fetchNearbyLots(113.95, 22.54, r) }
+    )
+  } else {
+    parkingStore.fetchNearbyLots(113.95, 22.54, r)
+  }
+}
+
 const filteredLots = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return parkingStore.parkingLots
@@ -20,18 +41,7 @@ const filteredLots = computed(() => {
 
 onMounted(() => {
   locationName.value = '深圳·科技园'
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        parkingStore.fetchNearbyLots(pos.coords.longitude, pos.coords.latitude)
-      },
-      () => {
-        parkingStore.fetchNearbyLots(113.95, 22.54)
-      }
-    )
-  } else {
-    parkingStore.fetchNearbyLots(113.95, 22.54)
-  }
+  fetchWithRadius(radius.value)
 })
 
 function onSearch() {
@@ -62,7 +72,23 @@ function goDetail(id: number) {
     </div>
 
     <div class="section-title">
-      <span>附近停车场</span>
+      <div class="section-left">
+        <span>附近停车场</span>
+        <el-dropdown trigger="click" @command="fetchWithRadius">
+          <el-button size="small" round class="radius-btn">
+            {{ radius === 1000 ? '1km' : radius === 3000 ? '3km' : radius === 5000 ? '5km' : radius === 7000 ? '7km' : radius === 10000 ? '10km' : '15km' }}
+            <el-icon><ArrowDown /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item v-for="opt in radiusOptions" :key="opt.value" :command="opt.value" :class="{ 'is-active': radius === opt.value }">
+                <span>{{ opt.label }}</span>
+                <el-icon v-if="radius === opt.value" style="margin-left: 8px; color: #409EFF;"><Check /></el-icon>
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </div>
       <span class="subtitle">共 {{ filteredLots.length }} 个</span>
     </div>
 
@@ -123,6 +149,30 @@ function goDetail(id: number) {
   font-size: 12px;
   font-weight: 400;
   color: #999;
+}
+
+.section-left {
+  display: flex;
+  align-items: center;
+}
+
+.radius-btn {
+  background: #fff;
+  border: 1px solid #b3d8ff;
+  color: #409EFF;
+  font-size: 12px;
+  padding: 4px 12px;
+  margin-left: 8px;
+  border-radius: 16px;
+}
+.radius-btn:hover {
+  background: #ecf5ff;
+  border-color: #409EFF;
+  color: #409EFF;
+}
+:deep(.is-active) {
+  color: #409EFF;
+  font-weight: 600;
 }
 
 .lot-list {

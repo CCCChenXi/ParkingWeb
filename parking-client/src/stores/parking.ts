@@ -28,10 +28,10 @@ export const useParkingStore = defineStore('parking', () => {
   const spots = ref<ParkingSpot[]>([])
   const loading = ref(false)
 
-  async function fetchNearbyLots(longitude: number, latitude: number) {
+  async function fetchNearbyLots(longitude: number, latitude: number, radius?: number) {
     loading.value = true
     try {
-      const res: any = await getNearbyParkingLots({ longitude, latitude })
+      const res: any = await getNearbyParkingLots({ longitude, latitude, radius })
       parkingLots.value = res.data || []
     } finally {
       loading.value = false
