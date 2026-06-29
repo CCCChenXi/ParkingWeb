@@ -17,9 +17,13 @@ const radiusOptions = [
   { label: '5km', value: 5000 },
   { label: '7km', value: 7000 },
   { label: '10km', value: 10000 },
-  { label: '15km', value: 15000 }
+  { label: '15km', value: 15000 },
+  { label: '25km', value: 25000 },
+  { label: '35km', value: 35000 },
+  { label: '50km', value: 50000 }
 ]
 const radius = ref(5000)
+const radiusText = computed(() => radiusOptions.find(o => o.value === radius.value)?.label || `${radius.value}m`)
 
 function fetchWithRadius(r: number) {
   if (navigator.geolocation) {
@@ -85,7 +89,7 @@ function goDetail(id: number) {
         <span>附近停车场</span>
         <el-dropdown trigger="click" @command="fetchWithRadius">
           <el-button size="small" round class="radius-btn">
-            {{ radius === 1000 ? '1km' : radius === 3000 ? '3km' : radius === 5000 ? '5km' : radius === 7000 ? '7km' : radius === 10000 ? '10km' : '15km' }}
+            {{ radiusText }}
             <el-icon><ArrowDown /></el-icon>
           </el-button>
           <template #dropdown>

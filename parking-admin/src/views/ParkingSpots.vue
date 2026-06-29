@@ -1,42 +1,54 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getParkingSpots, createParkingSpots, deleteParkingSpot, updateParkingSpot, getParkingLots } from '../api/admin'
+import { getParkingLots, getParkingSpots, createParkingSpots, deleteParkingSpot, updateParkingSpot } from '../api/admin'
 
 const route = useRoute()
-const router = useRouter()
-const lotId = Number(route.params.lotId)
 
 const loading = ref(false)
+const lots = ref<any[]>([])
+const selectedLotId = ref<number>(0)
 const spots = ref<any[]>([])
-const lotName = ref(`停车场#${lotId}`)
 
 const showDialog = ref(false)
 const batchForm = ref({ prefix: 'A', start: 1, count: 10, type: 0 })
 const saving = ref(false)
 
+async function fetchLots() {
+  try {
+    const res: any = await getParkingLots()
+    lots.value = res.data || []
+    const qLotId = route.query.lotId
+    if (qLotId) {
+      const id = Number(qLotId)
+      if (lots.value.some((l: any) => l.id === id)) {
+        selectedLotId.value = id
+      }
+    }
+  } catch {}
+}
+
 async function fetchSpots() {
+  const id = selectedLotId.value
+  if (!id) { spots.value = []; return }
   loading.value = true
   try {
-    const [spotsRes, lotsRes] = await Promise.all([
-      getParkingSpots(lotId).catch(() => ({ data: [] })),
-      getParkingLots().catch(() => ({ data: [] }))
-    ])
-    spots.value = spotsRes.data || []
-    const lot = (lotsRes.data || []).find((l: any) => l.id === lotId)
-    if (lot) lotName.value = lot.name
+    const res: any = await getParkingSpots(id)
+    spots.value = res.data || []
   } finally {
     loading.value = false
   }
 }
 
-onMounted(fetchSpots)
+watch(selectedLotId, fetchSpots)
+
+onMounted(fetchLots)
 
 async function handleDelete(id: number) {
   try {
     await ElMessageBox.confirm('确认删除此车位？', '提示', { confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning' })
-    await deleteParkingSpot(id)
+    await deleteParkingSpot(selectedLotId.value, id)
     ElMessage.success('删除成功')
     await fetchSpots()
   } catch {}
@@ -48,13 +60,17 @@ function openBatchAdd() {
 }
 
 async function handleBatchAdd() {
+  if (!selectedLotId.value) {
+    ElMessage.warning('请先选择停车场')
+    return
+  }
   const spotNumbers: string[] = []
   for (let i = 0; i < batchForm.value.count; i++) {
     spotNumbers.push(batchForm.value.prefix + String(batchForm.value.start + i).padStart(2, '0'))
   }
   saving.value = true
   try {
-    await createParkingSpots(lotId, { spotNumbers, type: batchForm.value.type })
+    await createParkingSpots(selectedLotId.value, { spotNumbers, type: batchForm.value.type })
     ElMessage.success(`成功添加 ${batchForm.value.count} 个车位`)
     showDialog.value = false
     await fetchSpots()
@@ -63,9 +79,9 @@ async function handleBatchAdd() {
   }
 }
 
-async function updateSpotType(row: any) {
+async function updateSpotType(spotId: number, type: number) {
   try {
-    await updateParkingSpot(row.id, { type: row.type })
+    await updateParkingSpot(selectedLotId.value, spotId, { type })
     ElMessage.success('修改成功')
   } catch {
     await fetchSpots()
@@ -76,16 +92,21 @@ async function updateSpotType(row: any) {
 <template>
   <div>
     <div class="page-header flex-between">
-      <div>
-        <el-button text @click="router.back()">
-          <el-icon><ArrowLeft /></el-icon> 返回
-        </el-button>
-        <h2 style="display: inline-block; margin-left: 8px;">{{ lotName }} - 车位管理</h2>
-      </div>
-      <el-button type="primary" @click="openBatchAdd">+ 批量新增车位</el-button>
+      <h2>车位管理</h2>
+      <el-button type="primary" :disabled="!selectedLotId" @click="openBatchAdd">+ 批量新增车位</el-button>
     </div>
 
-    <div class="card" v-loading="loading">
+    <div class="lot-selector">
+      <el-select v-model="selectedLotId" placeholder="请选择停车场" clearable style="width: 300px" size="large">
+        <el-option v-for="lot in lots" :key="lot.id" :value="lot.id" :label="lot.name" />
+      </el-select>
+    </div>
+
+    <div v-if="!selectedLotId" class="empty-tip">
+      <el-empty description="请先选择一个停车场" />
+    </div>
+
+    <div v-else class="card" v-loading="loading">
       <el-table :data="spots" stripe style="width: 100%">
         <el-table-column type="index" label="序号" width="60" />
         <el-table-column prop="spotNumber" label="车位编号" width="120" />
@@ -108,7 +129,7 @@ async function updateSpotType(row: any) {
         </el-table-column>
         <el-table-column label="车位类型" width="180">
           <template #default="{ row }">
-            <el-select v-model="row.type" size="small" @change="updateSpotType(row)">
+            <el-select v-model="row.type" size="small" @change="updateSpotType(row.id, row.type)">
               <el-option :value="0" label="标准车位" />
               <el-option :value="1" label="大型车位" />
               <el-option :value="2" label="充电桩" />
@@ -155,5 +176,11 @@ async function updateSpotType(row: any) {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.lot-selector {
+  margin-bottom: 16px;
+}
+.empty-tip {
+  margin-top: 80px;
 }
 </style>

@@ -69,7 +69,7 @@ async function handleSave() {
 }
 
 function viewSpots(lotId: number) {
-  router.push(`/parking-spots/${lotId}`)
+  router.push(`/parking-spots?lotId=${lotId}`)
 }
 </script>
 

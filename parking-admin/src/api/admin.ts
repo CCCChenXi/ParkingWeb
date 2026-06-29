@@ -29,19 +29,19 @@ export function deleteParkingLot(id: number) {
 }
 
 export function getParkingSpots(lotId: number) {
-  return request.get(`/admin/parking-lots/${lotId}/spots`)
+  return request.get(`/admin/parking-spot/${lotId}`)
 }
 
 export function createParkingSpots(lotId: number, data: { spotNumbers: string[]; type: number }) {
-  return request.post(`/admin/parking-spots`, { lotId, ...data })
+  return request.post(`/admin/parking-spot`, { lotId, ...data })
 }
 
-export function deleteParkingSpot(id: number) {
-  return request.delete(`/admin/parking-spots/${id}`)
+export function deleteParkingSpot(lotId: number, id: number) {
+  return request.delete(`/admin/parking-spot/${lotId}/${id}`)
 }
 
-export function updateParkingSpot(id: number, data: any) {
-  return request.put(`/admin/parking-spots/${id}`, data)
+export function updateParkingSpot(lotId: number, id: number, data: any) {
+  return request.put(`/admin/parking-spot/${lotId}/${id}`, data)
 }
 
 export function getCoupons() {

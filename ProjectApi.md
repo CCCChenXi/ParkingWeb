@@ -716,10 +716,10 @@ GET /api/admin/dashboard
 
 | Method | Path | 说明 |
 |--------|------|------|
-| GET | `/api/admin/parking-lots/{lotId}/spots` | 某停车场车位列表 |
-| POST | `/api/admin/parking-spots` | 批量新增 |
-| DELETE | `/api/admin/parking-spots/{id}` | 删除 |
-| PUT | `/api/admin/parking-spots/{id}` | 编辑 |
+| GET | `/api/admin/parking-spot/{lotId}` | 某停车场车位列表 |
+| POST | `/api/admin/parking-spot` | 批量新增 |
+| DELETE | `/api/admin/parking-spot/{lotId}/{id}` | 删除 |
+| PUT | `/api/admin/parking-spot/{lotId}/{id}` | 编辑 |
 
 **GET Response `data`**
 ```json
