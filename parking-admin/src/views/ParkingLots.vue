@@ -2,6 +2,8 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Refresh } from '@element-plus/icons-vue'
+import { useDebounceFn } from '@vueuse/core'
 import { getParkingLots, createParkingLot, updateParkingLot, deleteParkingLot } from '../api/admin'
 import MapPicker from '../components/MapPicker.vue'
 
@@ -9,32 +11,58 @@ const router = useRouter()
 
 const loading = ref(false)
 const lots = ref<any[]>([])
+const page = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+const keyword = ref('')
+const status = ref<number | undefined>(undefined)
 const showDialog = ref(false)
 const isEdit = ref(false)
-const form = ref({ id: 0, name: '', address: '', totalSpots: 0, longitude: 0, latitude: 0, status: 1 })
+const form = ref({ id: 0, name: '', address: '', longitude: 0, latitude: 0, status: 1 })
 const saving = ref(false)
 
 async function fetchLots() {
   loading.value = true
   try {
-    const res = await getParkingLots()
-    lots.value = res.data || []
+    const res = await getParkingLots({
+      page: page.value,
+      size: pageSize.value,
+      keyword: keyword.value || undefined,
+      status: status.value
+    })
+    lots.value = res.data.dataList
+    total.value = res.data.total
   } finally {
     loading.value = false
   }
+}
+
+const searchLots = useDebounceFn(() => {
+  page.value = 1
+  fetchLots()
+}, 300)
+
+function handleStatusChange() {
+  page.value = 1
+  fetchLots()
+}
+
+function handlePageChange(p: number) {
+  page.value = p
+  fetchLots()
 }
 
 onMounted(fetchLots)
 
 function openAdd() {
   isEdit.value = false
-  form.value = { id: 0, name: '', address: '', totalSpots: 0, longitude: 0, latitude: 0, status: 1 }
+  form.value = { id: 0, name: '', address: '', longitude: 0, latitude: 0, status: 1 }
   showDialog.value = true
 }
 
 function openEdit(row: any) {
   isEdit.value = true
-  form.value = { ...row }
+  form.value = { id: row.id, name: row.name, address: row.address, longitude: row.longitude, latitude: row.latitude, status: row.status }
   showDialog.value = true
 }
 
@@ -58,8 +86,16 @@ async function handleSave() {
       await updateParkingLot(form.value.id, form.value)
       ElMessage.success('修改成功')
     } else {
-      await createParkingLot(form.value)
+      const res: any = await createParkingLot(form.value)
       ElMessage.success('添加成功')
+      showDialog.value = false
+      const newId = res?.data?.id
+      if (newId) {
+        router.push(`/parking-spots?lotId=${newId}&showBatch=true`)
+      } else {
+        await fetchLots()
+      }
+      return
     }
     showDialog.value = false
     await fetchLots()
@@ -78,6 +114,29 @@ function viewSpots(lotId: number) {
     <div class="page-header flex-between">
       <h2>停车场管理</h2>
       <el-button type="primary" @click="openAdd">+ 新增停车场</el-button>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <el-input
+          v-model="keyword"
+          placeholder="搜索名称/地址"
+          clearable
+          style="width:280px"
+          @input="searchLots"
+        />
+        <el-select
+          v-model="status"
+          placeholder="全部状态"
+          clearable
+          style="width:130px;margin-left:12px"
+          @change="handleStatusChange"
+        >
+          <el-option label="营业中" :value="1" />
+          <el-option label="已关闭" :value="0" />
+        </el-select>
+      </div>
+      <el-button :icon="Refresh" size="small" circle @click="fetchLots" />
     </div>
 
     <div class="card" v-loading="loading">
@@ -102,6 +161,17 @@ function viewSpots(lotId: number) {
           </template>
         </el-table-column>
       </el-table>
+
+      <el-pagination
+        v-if="total"
+        v-model:current-page="page"
+        :page-size="pageSize"
+        :total="total"
+        layout="prev, pager, next, total"
+        background
+        @current-change="handlePageChange"
+        style="margin-top:16px;justify-content:center"
+      />
     </div>
 
     <el-dialog v-model="showDialog" :title="isEdit ? '编辑停车场' : '新增停车场'" width="640px" destroy-on-close>
@@ -111,9 +181,6 @@ function viewSpots(lotId: number) {
         </el-form-item>
         <el-form-item label="地址">
           <el-input v-model="form.address" placeholder="请输入地址" />
-        </el-form-item>
-        <el-form-item label="总车位数">
-          <el-input-number v-model="form.totalSpots" :min="1" :max="9999" />
         </el-form-item>
         <el-form-item label="状态">
           <el-switch v-model="form.status" :active-value="1" :inactive-value="0" active-text="营业" inactive-text="关闭" />
@@ -142,6 +209,16 @@ function viewSpots(lotId: number) {
 .flex-between {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.toolbar-left {
+  display: flex;
   align-items: center;
 }
 </style>

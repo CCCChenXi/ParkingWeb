@@ -26,7 +26,7 @@ async function handleSave() {
   }
   saving.value = true
   try {
-    await updateAdminProfile({ oldPassword: form.value.oldPassword, newPassword: form.value.newPassword })
+    await updateAdminProfile({ username: form.value.username, oldPassword: form.value.oldPassword, newPassword: form.value.newPassword })
     ElMessage.success('修改成功')
     form.value.oldPassword = ''
     form.value.newPassword = ''

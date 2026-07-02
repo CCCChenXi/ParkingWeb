@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getAdmins, createAdmin } from '../api/admin'
+import { getAdmins, getAdminDetail, createAdmin } from '../api/admin'
 
 const loading = ref(false)
 const admins = ref<any[]>([])
@@ -9,6 +9,10 @@ const admins = ref<any[]>([])
 const showDialog = ref(false)
 const form = ref({ username: '', password: '', role: 'operator' })
 const saving = ref(false)
+
+const showDetail = ref(false)
+const detailAdmin = ref<any>(null)
+const detailLoading = ref(false)
 
 async function fetchAdmins() {
   loading.value = true
@@ -46,6 +50,19 @@ async function handleSave() {
     saving.value = false
   }
 }
+
+async function openDetail(row: any) {
+  detailLoading.value = true
+  showDetail.value = true
+  try {
+    const res = await getAdminDetail(row.id)
+    detailAdmin.value = res.data
+  } catch {
+    detailAdmin.value = row
+  } finally {
+    detailLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -57,16 +74,23 @@ async function handleSave() {
 
     <div class="card" v-loading="loading">
       <el-table :data="admins" stripe style="width: 100%">
-        <el-table-column type="index" label="序号" width="60" />
-        <el-table-column prop="username" label="用户名" min-width="150" />
-        <el-table-column label="角色" width="120">
+        <el-table-column type="index" label="序号" width="60" align="center" />
+        <el-table-column prop="username" label="用户名" align="center" />
+        <el-table-column label="角色" width="120" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.role === 'super' ? 'danger' : 'primary'" size="small">
-              {{ row.role === 'super' ? '超级管理员' : '操作员' }}
-            </el-tag>
+            <div style="display:inline-block;text-align:left">
+              <el-tag :type="row.role === 'super' ? 'danger' : 'primary'" size="small">
+                {{ row.role === 'super' ? '超级管理员' : '操作员' }}
+              </el-tag>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" min-width="140" />
+        <el-table-column prop="createTime" label="创建时间" align="center" />
+        <el-table-column label="操作" width="80" align="center">
+          <template #default="{ row }">
+            <el-button size="small" type="primary" @click="openDetail(row)">详情</el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </div>
 
@@ -89,6 +113,19 @@ async function handleSave() {
         <el-button @click="showDialog = false">取消</el-button>
         <el-button type="primary" :loading="saving" @click="handleSave">确认</el-button>
       </template>
+    </el-dialog>
+
+    <el-dialog v-model="showDetail" title="管理员详情" width="450px" destroy-on-close v-loading="detailLoading">
+      <el-descriptions v-if="detailAdmin" :column="1" border>
+        <el-descriptions-item label="管理员ID">{{ detailAdmin.id }}</el-descriptions-item>
+        <el-descriptions-item label="用户名">{{ detailAdmin.username }}</el-descriptions-item>
+        <el-descriptions-item label="角色">
+          <el-tag :type="detailAdmin.role === 'super' ? 'danger' : 'primary'" size="small">
+            {{ detailAdmin.role === 'super' ? '超级管理员' : '操作员' }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ detailAdmin.createTime }}</el-descriptions-item>
+      </el-descriptions>
     </el-dialog>
   </div>
 </template>

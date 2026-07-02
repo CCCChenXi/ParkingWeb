@@ -12,8 +12,17 @@ export function getDashboard() {
   return request.get('/admin/dashboard')
 }
 
-export function getParkingLots() {
-  return request.get('/admin/parking-lots')
+export function getParkingLots(params: {
+  page: number
+  size: number
+  keyword?: string
+  status?: number
+}) {
+  return request.get('/admin/parking-lots', { params })
+}
+
+export function getParkingLotNames() {
+  return request.get('/admin/parking-lots/names')
 }
 
 export function createParkingLot(data: any) {
@@ -60,8 +69,12 @@ export function deleteCoupon(id: number) {
   return request.delete(`/admin/coupons/${id}`)
 }
 
-export function getUsers() {
-  return request.get('/admin/users')
+export function getUsers(params: {
+  page: number
+  size: number
+  keyword?: string
+}) {
+  return request.get('/admin/users', { params })
 }
 
 export function getUserDetail(id: number) {
@@ -74,6 +87,10 @@ export function getAdmins() {
 
 export function createAdmin(data: any) {
   return request.post('/admin/admins', data)
+}
+
+export function getAdminDetail(id: number) {
+  return request.get(`/admin/admins/${id}`)
 }
 
 export function updateAdminProfile(data: any) {
