@@ -15,7 +15,7 @@ onMounted(() => {
 })
 
 async function onRecharged(amount: number) {
-  await walletStore.doRecharge(amount)
+  await walletStore.fetchWallet()
   await walletStore.fetchLogs()
   ElMessage.success(`充值 ¥${amount} 成功`)
 }

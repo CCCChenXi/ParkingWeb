@@ -26,6 +26,7 @@ const radius = ref(5000)
 const radiusText = computed(() => radiusOptions.find(o => o.value === radius.value)?.label || `${radius.value}m`)
 
 function fetchWithRadius(r: number) {
+  radius.value = r
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (pos) => { parkingStore.fetchNearbyLots(pos.coords.longitude, pos.coords.latitude, r) },
