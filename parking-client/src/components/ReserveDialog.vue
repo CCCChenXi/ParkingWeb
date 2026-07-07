@@ -22,7 +22,7 @@ const selectedCouponId = ref<number | undefined>(undefined)
 
 onMounted(() => {
   userStore.fetchVehicles()
-  couponStore.fetchUserCoupons()
+  couponStore.refreshMine()
   if (userStore.vehicles.length > 0) {
     selectedPlate.value = userStore.vehicles[0].plateNumber
   }
@@ -85,9 +85,9 @@ function close() {
 
         <div class="form-section">
           <div class="form-label">优惠券 (可选)</div>
-          <div v-if="couponStore.userCoupons.length > 0" class="coupon-select">
+          <div v-if="couponStore.mine.items.length > 0" class="coupon-select">
             <div
-              v-for="c in couponStore.userCoupons"
+              v-for="c in couponStore.mine.items.filter(i => i.status === 0)"
               :key="c.id"
               class="coupon-option"
               :class="{ selected: selectedCouponId === c.id }"
