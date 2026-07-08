@@ -5,6 +5,7 @@ defineProps<{
     spotNumber: string
     type: number
     status: number
+    seq: number
   }>
 }>()
 
@@ -37,6 +38,7 @@ function getSpotLabel(spot: any) {
       @click="emit('spotClick', spot)"
     >
       <span class="spot-number">{{ spot.spotNumber }}</span>
+      <span class="spot-seq">#{{ spot.seq }}</span>
       <span v-if="getSpotLabel(spot)" class="spot-label">{{ getSpotLabel(spot) }}</span>
     </div>
   </div>
@@ -111,5 +113,10 @@ function getSpotLabel(spot: any) {
 
 .spot-label {
   font-size: 12px;
+}
+
+.spot-seq {
+  font-size: 9px;
+  opacity: 0.6;
 }
 </style>

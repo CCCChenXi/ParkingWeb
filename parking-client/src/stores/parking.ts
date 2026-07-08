@@ -20,6 +20,7 @@ export interface ParkingSpot {
   spotNumber: string
   type: number
   status: number
+  seq: number
 }
 
 export const useParkingStore = defineStore('parking', () => {

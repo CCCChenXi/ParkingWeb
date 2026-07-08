@@ -36,7 +36,7 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
-  async function reserve(data: { lotId: number; spotId: number; plateNumber: string; couponId?: number }) {
+  async function reserve(data: { lotId: number; spotId: number; seq: number; plateNumber: string; couponId?: number }) {
     const res: any = await createOrder(data)
     await fetchOrders()
     return res

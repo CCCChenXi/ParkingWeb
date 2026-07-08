@@ -1,6 +1,6 @@
 import request from './request'
 
-export function createOrder(data: { lotId: number; spotId: number; plateNumber: string; couponId?: number }) {
+export function createOrder(data: { lotId: number; spotId: number; seq: number; plateNumber: string; couponId?: number }) {
   return request.post('/orders', data)
 }
 

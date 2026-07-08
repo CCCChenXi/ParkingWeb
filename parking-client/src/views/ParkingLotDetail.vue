@@ -45,6 +45,7 @@ async function onReserve(data: { plateNumber: string; couponId?: number }) {
     await orderStore.reserve({
       lotId,
       spotId: selectedSpot.value.id,
+      seq: selectedSpot.value.seq,
       plateNumber: data.plateNumber,
       couponId: data.couponId
     })
