@@ -36,8 +36,16 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
-  async function reserve(data: { lotId: number; spotId: number; seq: number; plateNumber: string; couponId?: number }) {
+  async function reserve(data: { lotId: number; spotId: number; seq: number; plateNumber: string }) {
     const res: any = await createOrder(data)
+    await fetchOrders()
+    return res
+  }
+
+  async function directEnter(data: { lotId: number; spotId: number; seq: number; plateNumber: string }) {
+    const res: any = await createOrder(data)
+    const orderId = res.data.id
+    await enterPark(orderId)
     await fetchOrders()
     return res
   }
@@ -47,8 +55,8 @@ export const useOrderStore = defineStore('order', () => {
     await fetchOrders()
   }
 
-  async function doSettle(id: number) {
-    const res: any = await settleOrder(id)
+  async function doSettle(id: number, couponId?: number) {
+    const res: any = await settleOrder(id, couponId !== undefined ? { couponId } : undefined)
     await fetchOrders()
     return res
   }
@@ -66,6 +74,7 @@ export const useOrderStore = defineStore('order', () => {
     settledOrders,
     fetchOrders,
     reserve,
+    directEnter,
     doEnter,
     doSettle,
     doCancel

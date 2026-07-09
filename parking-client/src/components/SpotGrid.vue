@@ -14,9 +14,7 @@ const emit = defineEmits<{
 }>()
 
 function getSpotClass(spot: any) {
-  if (spot.status === 1) {
-    return spot.type === 2 ? 'spot-charging-occupied' : 'spot-occupied'
-  }
+  if (spot.status === 1) return 'spot-occupied'
   if (spot.type === 2) return 'spot-charging'
   if (spot.type === 1) return 'spot-large'
   return 'spot-free'
@@ -93,17 +91,10 @@ function getSpotLabel(spot: any) {
   border: 1px solid #bbdefb;
 }
 
-.spot-charging-occupied {
-  background: #f3e5f5;
-  color: #7b1fa2;
-  border: 1px solid #e1bee7;
-  cursor: default !important;
-}
-
 .spot-large {
-  background: #fff8e1;
-  color: #e65100;
-  border: 1px solid #ffe0b2;
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
 }
 
 .spot-number {

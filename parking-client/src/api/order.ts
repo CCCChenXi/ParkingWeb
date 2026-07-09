@@ -1,6 +1,6 @@
 import request from './request'
 
-export function createOrder(data: { lotId: number; spotId: number; seq: number; plateNumber: string; couponId?: number }) {
+export function createOrder(data: { lotId: number; spotId: number; seq: number; plateNumber: string }) {
   return request.post('/orders', data)
 }
 
@@ -16,8 +16,8 @@ export function enterPark(id: number) {
   return request.put(`/orders/${id}/enter`)
 }
 
-export function settleOrder(id: number) {
-  return request.put(`/orders/${id}/settle`)
+export function settleOrder(id: number, data?: { couponId?: number }) {
+  return request.put(`/orders/${id}/settle`, data)
 }
 
 export function cancelOrder(id: number) {

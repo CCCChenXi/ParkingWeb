@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useOrderStore } from '../stores/order'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import SettleDialog from './SettleDialog.vue'
 
 const props = defineProps<{
   order: {
@@ -20,6 +21,7 @@ const props = defineProps<{
 }>()
 
 const orderStore = useOrderStore()
+const showSettleDialog = ref(false)
 
 const statusMap: Record<number, { label: string; color: string }> = {
   0: { label: '已预约', color: '#409EFF' },
@@ -29,6 +31,15 @@ const statusMap: Record<number, { label: string; color: string }> = {
 }
 
 const statusInfo = computed(() => statusMap[props.order.status] || { label: '未知', color: '#999' })
+
+function handleEnter() {
+  ElMessageBox.confirm('确认入场？入场后开始计时计费', '提示', { confirmButtonText: '确认入场', cancelButtonText: '取消', type: 'info' })
+    .then(async () => {
+      await orderStore.doEnter(props.order.id)
+      ElMessage.success('入场成功')
+    })
+    .catch(() => {})
+}
 
 function handleCancel() {
   ElMessageBox.confirm('确认取消此预约？', '提示', { confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning' })
@@ -40,12 +51,13 @@ function handleCancel() {
 }
 
 function handleSettle() {
-  ElMessageBox.confirm('确认结算本次停车？', '提示', { confirmButtonText: '结算', cancelButtonText: '取消', type: 'info' })
-    .then(async () => {
-      await orderStore.doSettle(props.order.id)
-      ElMessage.success('结算成功')
-    })
-    .catch(() => {})
+  showSettleDialog.value = true
+}
+
+async function handleSettleConfirm(couponId?: number) {
+  showSettleDialog.value = false
+  await orderStore.doSettle(props.order.id, couponId)
+  ElMessage.success('结算成功')
 }
 </script>
 
@@ -88,10 +100,18 @@ function handleSettle() {
     </div>
     <div class="order-footer" v-if="order.status === 0">
       <el-button size="small" round @click="handleCancel">取消预约</el-button>
+      <el-button type="primary" size="small" round @click="handleEnter">入场</el-button>
     </div>
     <div class="order-footer" v-if="order.status === 1">
       <el-button type="primary" size="small" round @click="handleSettle">立即结算</el-button>
     </div>
+
+    <SettleDialog
+      v-if="showSettleDialog"
+      :order="order"
+      @close="showSettleDialog = false"
+      @confirm="handleSettleConfirm"
+    />
   </div>
 </template>
 

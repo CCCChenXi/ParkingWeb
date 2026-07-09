@@ -13,7 +13,9 @@ const parkingStore = useParkingStore()
 const orderStore = useOrderStore()
 
 const lotId = Number(route.params.id)
+const showActionPicker = ref(false)
 const showReserve = ref(false)
+const actionMode = ref<'reserve' | 'enter'>('reserve')
 const selectedSpot = ref<any>(null)
 
 const lotInfo = computed(() => parkingStore.currentLot || {
@@ -37,20 +39,37 @@ function onSpotClick(spot: any) {
     return
   }
   selectedSpot.value = spot
+  showActionPicker.value = true
+}
+
+function chooseAction(mode: 'reserve' | 'enter') {
+  actionMode.value = mode
+  showActionPicker.value = false
   showReserve.value = true
 }
 
-async function onReserve(data: { plateNumber: string; couponId?: number }) {
+async function onReserve(data: { plateNumber: string }) {
   try {
-    await orderStore.reserve({
-      lotId,
-      spotId: selectedSpot.value.id,
-      seq: selectedSpot.value.seq,
-      plateNumber: data.plateNumber,
-      couponId: data.couponId
-    })
-    showReserve.value = false
-    ElMessage.success('预约成功，请在15分钟内入场')
+    if (actionMode.value === 'reserve') {
+      await orderStore.reserve({
+        lotId,
+        spotId: selectedSpot.value.id,
+        seq: selectedSpot.value.seq,
+        plateNumber: data.plateNumber
+      })
+      showReserve.value = false
+      ElMessage.success('预约成功，请在15分钟内入场')
+    } else {
+      await orderStore.directEnter({
+        lotId,
+        spotId: selectedSpot.value.id,
+        seq: selectedSpot.value.seq,
+        plateNumber: data.plateNumber
+      })
+      showReserve.value = false
+      parkingStore.fetchSpots(lotId)
+      ElMessage.success('已入场，开始计时计费')
+    }
   } catch {
     // handled by interceptor
   }
@@ -90,25 +109,57 @@ async function onReserve(data: { plateNumber: string; couponId?: number }) {
     <div class="legend">
       <div class="legend-item">
         <div class="legend-dot free" />
-        <span>空闲</span>
+        <span>标准</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot large" />
+        <span>大型</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot charging" />
+        <span>充电</span>
       </div>
       <div class="legend-item">
         <div class="legend-dot occupied" />
         <span>占用</span>
       </div>
-      <div class="legend-item">
-        <div class="legend-dot charging" />
-        <span>充电桩</span>
-      </div>
     </div>
 
     <SpotGrid :spots="parkingStore.spots" @spot-click="onSpotClick" />
+
+    <div v-if="showActionPicker" class="dialog-overlay" @click.self="showActionPicker = false">
+      <div class="action-picker">
+        <div class="action-header">选择操作</div>
+        <div class="action-info">
+          <span>车位 {{ selectedSpot?.spotNumber }}</span>
+          <span class="action-type">{{ selectedSpot?.type === 2 ? '新能源充电桩' : selectedSpot?.type === 1 ? '大型车位' : '标准车位' }}</span>
+        </div>
+        <div class="action-buttons">
+          <el-button class="action-btn reserve-btn" round @click="chooseAction('reserve')">
+            <div class="btn-top">
+              <el-icon :size="16"><Clock /></el-icon>
+              <span>预约车位</span>
+            </div>
+            <small>保留15分钟</small>
+          </el-button>
+          <el-button class="action-btn enter-btn" type="primary" round @click="chooseAction('enter')">
+            <div class="btn-top">
+              <el-icon :size="16"><Switch /></el-icon>
+              <span>立即停车</span>
+            </div>
+            <small>直接入场</small>
+          </el-button>
+        </div>
+        <el-button class="action-cancel" text @click="showActionPicker = false">取消</el-button>
+      </div>
+    </div>
 
     <ReserveDialog
       v-if="showReserve"
       v-model="showReserve"
       :spot="selectedSpot"
       :lot-name="lotInfo.name"
+      :mode="actionMode"
       @confirm="onReserve"
     />
   </div>
@@ -202,6 +253,111 @@ async function onReserve(data: { plateNumber: string; couponId?: number }) {
 }
 
 .legend-dot.free { background: #67C23A; }
-.legend-dot.occupied { background: #F56C6C; }
+.legend-dot.large { background: #ffc107; }
 .legend-dot.charging { background: #409EFF; }
+.legend-dot.occupied { background: #F56C6C; }
+
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.action-picker {
+  width: 430px;
+  max-width: 100%;
+  background: #ffffff;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 16px;
+  animation: slideUp 0.25s ease-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.action-header {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.action-info {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.action-type {
+  color: #409EFF;
+  font-weight: 500;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.action-btn :deep(span) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
+  height: 100%;
+}
+
+.btn-top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-btn {
+  flex: 1;
+  height: 60px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 0;
+}
+
+.action-btn small {
+  font-size: 10px;
+  font-weight: 400;
+  opacity: 0.65;
+  line-height: 1.3;
+}
+
+.reserve-btn {
+  border: 1px solid #e8e8e8;
+  color: #333;
+  background: #fafafa;
+}
+
+.enter-btn {
+  color: #fff;
+}
+
+.action-cancel {
+  color: #999;
+  font-size: 13px;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
 </style>

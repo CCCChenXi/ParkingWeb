@@ -15,7 +15,8 @@ const filteredOrders = computed(() => {
 const tabs = [
   { key: 'reserved', label: '已预约', status: 0 },
   { key: 'active', label: '进行中', status: 1 },
-  { key: 'settled', label: '已结算', status: 2 }
+  { key: 'settled', label: '已结算', status: 2 },
+  { key: 'cancelled', label: '已取消', status: 3 }
 ]
 
 onMounted(() => {

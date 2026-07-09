@@ -1,28 +1,29 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useUserStore } from '../stores/user'
-import { useCouponStore } from '../stores/coupon'
 import { ElMessage } from 'element-plus'
 
 const props = defineProps<{
   spot: any
   lotName: string
+  mode: 'reserve' | 'enter'
 }>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', val: boolean): void
-  (e: 'confirm', data: { plateNumber: string; couponId?: number }): void
+  (e: 'confirm', data: { plateNumber: string }): void
 }>()
 
 const userStore = useUserStore()
-const couponStore = useCouponStore()
 
 const selectedPlate = ref('')
-const selectedCouponId = ref<number | undefined>(undefined)
+
+const titleText = computed(() => props.mode === 'reserve' ? '预约车位' : '立即停车')
+const confirmText = computed(() => props.mode === 'reserve' ? '确认预约' : '立即停车')
+const noticeText = computed(() => props.mode === 'reserve' ? '预约后15分钟内未入场将自动取消' : '入场后开始计时计费')
 
 onMounted(() => {
   userStore.fetchVehicles()
-  couponStore.refreshMine()
   if (userStore.vehicles.length > 0) {
     selectedPlate.value = userStore.vehicles[0].plateNumber
   }
@@ -34,8 +35,7 @@ function confirm() {
     return
   }
   emit('confirm', {
-    plateNumber: selectedPlate.value,
-    couponId: selectedCouponId.value
+    plateNumber: selectedPlate.value
   })
 }
 
@@ -48,7 +48,7 @@ function close() {
   <div class="dialog-overlay" @click.self="close">
     <div class="dialog-content">
       <div class="dialog-header">
-        <div class="dialog-title">预约车位</div>
+        <div class="dialog-title">{{ titleText }}</div>
         <el-icon @click="close" class="close-icon"><Close /></el-icon>
       </div>
 
@@ -83,33 +83,15 @@ function close() {
           </el-radio-group>
         </div>
 
-        <div class="form-section">
-          <div class="form-label">优惠券 (可选)</div>
-          <div v-if="couponStore.mine.items.length > 0" class="coupon-select">
-            <div
-              v-for="c in couponStore.mine.items.filter(i => i.status === 0)"
-              :key="c.id"
-              class="coupon-option"
-              :class="{ selected: selectedCouponId === c.id }"
-              @click="selectedCouponId = selectedCouponId === c.id ? undefined : c.id"
-            >
-              <span class="c-name">¥{{ c.discountAmount }} {{ c.name }}</span>
-              <span class="c-min">满{{ c.minAmount }}可用</span>
-              <el-icon v-if="selectedCouponId === c.id" color="#409EFF"><CircleCheck /></el-icon>
-            </div>
-          </div>
-          <div v-else class="no-coupon">暂无可用优惠券</div>
-        </div>
-
         <div class="notice">
           <el-icon color="#E6A23C"><WarningFilled /></el-icon>
-          <span>预约后15分钟内未入场将自动取消</span>
+          <span>{{ noticeText }}</span>
         </div>
       </div>
 
       <div class="dialog-footer">
         <el-button @click="close" round>取消</el-button>
-        <el-button type="primary" round @click="confirm">确认预约</el-button>
+        <el-button type="primary" round @click="confirm">{{ confirmText }}</el-button>
       </div>
     </div>
   </div>
@@ -204,7 +186,13 @@ function close() {
 }
 
 .vehicle-radio {
+  display: flex;
+  width: 100%;
   margin-right: 0 !important;
+}
+
+.vehicle-radio :deep(.el-radio__label) {
+  flex: 1;
 }
 
 .vehicle-option {
@@ -222,47 +210,6 @@ function close() {
 .v-brand {
   font-size: 12px;
   color: #999;
-}
-
-.coupon-select {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.coupon-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid #e8e8e8;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.coupon-option.selected {
-  border-color: #409EFF;
-  background: #f0f7ff;
-}
-
-.c-name {
-  flex: 1;
-  font-size: 13px;
-  color: #333;
-  font-weight: 500;
-}
-
-.c-min {
-  font-size: 11px;
-  color: #999;
-}
-
-.no-coupon {
-  font-size: 12px;
-  color: #ccc;
-  text-align: center;
-  padding: 12px;
 }
 
 .notice {
