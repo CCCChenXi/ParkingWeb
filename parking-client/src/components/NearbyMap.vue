@@ -62,6 +62,10 @@ onMounted(() => {
 })
 
 watch(() => props.lots, renderMarkers, { deep: true })
+
+watch(() => [props.centerLng, props.centerLat], ([lng, lat]) => {
+  if (map) map.setCenter([lng, lat])
+})
 </script>
 
 <template>

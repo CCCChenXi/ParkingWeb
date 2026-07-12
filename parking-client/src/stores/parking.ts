@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getNearbyParkingLots, getParkingLotDetail, getParkingSpots } from '../api/parking'
+import { getAllParkingLots, getNearbyParkingLots, getParkingLotDetail, getParkingSpots } from '../api/parking'
 
 export interface ParkingLot {
   id: number
@@ -28,6 +28,16 @@ export const useParkingStore = defineStore('parking', () => {
   const currentLot = ref<ParkingLot | null>(null)
   const spots = ref<ParkingSpot[]>([])
   const loading = ref(false)
+
+  async function fetchAllLots() {
+    loading.value = true
+    try {
+      const res: any = await getAllParkingLots()
+      parkingLots.value = res.data || []
+    } finally {
+      loading.value = false
+    }
+  }
 
   async function fetchNearbyLots(longitude: number, latitude: number, radius?: number) {
     loading.value = true
@@ -64,6 +74,7 @@ export const useParkingStore = defineStore('parking', () => {
     currentLot,
     spots,
     loading,
+    fetchAllLots,
     fetchNearbyLots,
     fetchLotDetail,
     fetchSpots

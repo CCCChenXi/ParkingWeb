@@ -2,14 +2,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useParkingStore } from '../stores/parking'
+import type { ParkingLot } from '../stores/parking'
 import ParkingLotCard from '../components/ParkingLotCard.vue'
 import NearbyMap from '../components/NearbyMap.vue'
 
 const router = useRouter()
 const parkingStore = useParkingStore()
-
-const locationName = ref('获取位置中...')
-const searchQuery = ref('')
 
 const radiusOptions = [
   { label: '1km', value: 1000 },
@@ -18,24 +16,42 @@ const radiusOptions = [
   { label: '7km', value: 7000 },
   { label: '10km', value: 10000 },
   { label: '15km', value: 15000 },
-  { label: '25km', value: 25000 },
-  { label: '35km', value: 35000 },
-  { label: '50km', value: 50000 }
 ]
 const radius = ref(5000)
-const radiusText = computed(() => radiusOptions.find(o => o.value === radius.value)?.label || `${radius.value}m`)
 
-function fetchWithRadius(r: number) {
-  radius.value = r
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => { parkingStore.fetchNearbyLots(pos.coords.longitude, pos.coords.latitude, r) },
-      () => { parkingStore.fetchNearbyLots(113.95, 22.54, r) }
-    )
-  } else {
-    parkingStore.fetchNearbyLots(113.95, 22.54, r)
-  }
+const searchQuery = ref('')
+const userLng = ref(113.95)
+const userLat = ref(22.54)
+const locationGranted = ref(false)
+const requesting = ref(false)
+
+function haversineKm(lng1: number, lat1: number, lng2: number, lat2: number): number {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
+
+function requestLocation() {
+  if (!navigator.geolocation) return
+  requesting.value = true
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      userLng.value = pos.coords.longitude
+      userLat.value = pos.coords.latitude
+      locationGranted.value = true
+      requesting.value = false
+    },
+    () => { requesting.value = false },
+    { enableHighAccuracy: true }
+  )
+}
+
+onMounted(() => {
+  parkingStore.fetchAllLots()
+  requestLocation()
+})
 
 const filteredLots = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
@@ -45,14 +61,14 @@ const filteredLots = computed(() => {
   )
 })
 
-onMounted(() => {
-  locationName.value = '深圳·科技园'
-  fetchWithRadius(radius.value)
+const nearbyLots = computed<(ParkingLot & { distance: string })[]>(() => {
+  if (!locationGranted.value) return []
+  const lots = parkingStore.parkingLots.map(lot => {
+    const km = haversineKm(userLng.value, userLat.value, lot.longitude, lot.latitude)
+    return { ...lot, _km: km, distance: km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km` }
+  })
+  return lots.filter(l => l._km * 1000 <= radius.value).sort((a, b) => a._km - b._km)
 })
-
-function onSearch() {
-  // filteredLots is computed, no-op needed
-}
 
 function goDetail(id: number) {
   router.push(`/parking-lot/${id}`)
@@ -61,11 +77,6 @@ function goDetail(id: number) {
 
 <template>
   <div v-loading="parkingStore.loading" class="page">
-    <div class="location-bar">
-      <el-icon color="#409EFF"><LocationFilled /></el-icon>
-      <span class="location-text">{{ locationName }}</span>
-    </div>
-
     <div class="search-bar">
       <el-input
         v-model="searchQuery"
@@ -73,29 +84,28 @@ function goDetail(id: number) {
         :prefix-icon="'Search'"
         clearable
         size="large"
-        @input="onSearch"
       />
     </div>
 
     <NearbyMap
       v-if="filteredLots.length"
       :lots="filteredLots"
-      :center-lng="113.95"
-      :center-lat="22.54"
+      :center-lng="userLng"
+      :center-lat="userLat"
       @select="goDetail"
     />
 
-    <div class="section-title">
-      <div class="section-left">
+    <div class="nearby-section">
+      <div class="section-title">
         <span>附近停车场</span>
-        <el-dropdown trigger="click" @command="fetchWithRadius">
+        <el-dropdown v-if="locationGranted" trigger="click" @command="(v: number) => radius = v">
           <el-button size="small" round class="radius-btn">
-            {{ radiusText }}
+            {{ radiusOptions.find(o => o.value === radius)?.label }}
             <el-icon><ArrowDown /></el-icon>
           </el-button>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item v-for="opt in radiusOptions" :key="opt.value" :command="opt.value" :class="{ 'is-active': radius === opt.value }">
+              <el-dropdown-item v-for="opt in radiusOptions" :key="opt.value" :command="opt.value">
                 <span>{{ opt.label }}</span>
                 <el-icon v-if="radius === opt.value" style="margin-left: 8px; color: #409EFF;"><Check /></el-icon>
               </el-dropdown-item>
@@ -103,38 +113,35 @@ function goDetail(id: number) {
           </template>
         </el-dropdown>
       </div>
-      <span class="subtitle">共 {{ filteredLots.length }} 个</span>
-    </div>
 
-    <div class="lot-list">
-      <ParkingLotCard
-        v-for="lot in filteredLots"
-        :key="lot.id"
-        :lot="lot"
-        @click="goDetail(lot.id)"
-      />
-    </div>
+      <div v-if="requesting" class="location-prompt">
+        <el-icon class="spin"><Loading /></el-icon>
+        <span>获取位置中...</span>
+      </div>
 
-    <div v-if="filteredLots.length === 0" class="empty-state">
-      <el-empty description="暂无停车场信息" />
+      <div v-else-if="!locationGranted" class="location-prompt">
+        <el-icon color="#999"><Location /></el-icon>
+        <span>开启位置权限可查看附近停车场</span>
+        <el-button type="primary" round size="small" @click="requestLocation">获取位置</el-button>
+      </div>
+
+      <div v-else-if="nearbyLots.length === 0" class="location-prompt">
+        <span>附近 {{ radiusOptions.find(o => o.value === radius)?.label }} 内暂无停车场</span>
+      </div>
+
+      <div v-else class="lot-list">
+        <ParkingLotCard
+          v-for="lot in nearbyLots"
+          :key="lot.id"
+          :lot="lot"
+          @click="goDetail(lot.id)"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.location-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.location-text {
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-}
-
 .search-bar {
   margin-bottom: 20px;
 }
@@ -153,21 +160,10 @@ function goDetail(id: number) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
   font-size: 16px;
   font-weight: 600;
   color: #1a1a1a;
-}
-
-.subtitle {
-  font-size: 12px;
-  font-weight: 400;
-  color: #999;
-}
-
-.section-left {
-  display: flex;
-  align-items: center;
+  margin-bottom: 12px;
 }
 
 .radius-btn {
@@ -176,17 +172,29 @@ function goDetail(id: number) {
   color: #409EFF;
   font-size: 12px;
   padding: 4px 12px;
-  margin-left: 8px;
   border-radius: 16px;
 }
+
 .radius-btn:hover {
   background: #ecf5ff;
   border-color: #409EFF;
   color: #409EFF;
 }
-:deep(.is-active) {
-  color: #409EFF;
-  font-weight: 600;
+
+.nearby-section {
+  margin-top: 16px;
+}
+
+.location-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 16px;
+  background: #fafafa;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #999;
 }
 
 .lot-list {
@@ -195,7 +203,12 @@ function goDetail(id: number) {
   gap: 12px;
 }
 
-.empty-state {
-  margin-top: 60px;
+.spin {
+  animation: rotating 1s linear infinite;
+}
+
+@keyframes rotating {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>

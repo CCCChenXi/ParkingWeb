@@ -16,7 +16,7 @@ export function enterPark(id: number) {
   return request.put(`/orders/${id}/enter`)
 }
 
-export function settleOrder(id: number, data?: { couponId?: number }) {
+export function settleOrder(id: number, data: { couponId: number | null }) {
   return request.put(`/orders/${id}/settle`, data)
 }
 

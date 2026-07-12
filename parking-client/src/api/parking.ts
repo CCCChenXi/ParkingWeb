@@ -1,5 +1,9 @@
 import request from './request'
 
+export function getAllParkingLots() {
+  return request.get('/parking-lots')
+}
+
 export function getNearbyParkingLots(params: { longitude: number; latitude: number; radius?: number }) {
   return request.get('/parking-lots/nearby', { params })
 }

@@ -56,7 +56,7 @@ export const useOrderStore = defineStore('order', () => {
   }
 
   async function doSettle(id: number, couponId?: number) {
-    const res: any = await settleOrder(id, couponId !== undefined ? { couponId } : undefined)
+    const res: any = await settleOrder(id, { couponId: couponId ?? null })
     await fetchOrders()
     return res
   }
