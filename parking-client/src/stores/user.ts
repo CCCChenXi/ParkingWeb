@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { login as apiLogin, register as apiRegister, sendCode as apiSendCode, getUserProfile, updateUserProfile, getVehicles, addVehicle, updateVehicle as apiUpdateVehicle, deleteVehicle, logout as apiLogout } from '../api/user'
+import { useMessageStore } from './message'
 
 export interface Vehicle {
   id: number
@@ -33,10 +34,14 @@ export const useUserStore = defineStore('user', () => {
 
   async function login(username: string, password: string) {
     const res: any = await apiLogin({ username, password })
+    const msgStore = useMessageStore()
+    msgStore.disconnect()
     token.value = res.data.token
-    userInfo.value = res.data.user
+    userInfo.value = res.data.userVO
     localStorage.setItem('token', res.data.token)
-    if (res.data.user) localStorage.setItem('user', JSON.stringify(res.data.user))
+    if (res.data.userVO) localStorage.setItem('user', JSON.stringify(res.data.userVO))
+    msgStore.clearCache()
+    msgStore.connect()
     return res
   }
 
@@ -46,15 +51,22 @@ export const useUserStore = defineStore('user', () => {
 
   async function register(username: string, password: string, phone: string, code: string) {
     const res: any = await apiRegister({ username, password, phone, code })
+    const msgStore = useMessageStore()
+    msgStore.disconnect()
     token.value = res.data.token
-    userInfo.value = res.data.user
+    userInfo.value = res.data.userVO
     localStorage.setItem('token', res.data.token)
-    if (res.data.user) localStorage.setItem('user', JSON.stringify(res.data.user))
+    if (res.data.userVO) localStorage.setItem('user', JSON.stringify(res.data.userVO))
+    msgStore.clearCache()
+    msgStore.connect()
     return res
   }
 
   async function logout() {
     try { await apiLogout() } catch {}
+    const msgStore = useMessageStore()
+    msgStore.disconnect()
+    msgStore.clearCache()
     token.value = ''
     userInfo.value = null
     vehicles.value = []
