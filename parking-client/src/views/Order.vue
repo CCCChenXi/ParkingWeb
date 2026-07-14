@@ -1,16 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useInfiniteScroll } from '@vueuse/core'
 import { useOrderStore } from '../stores/order'
 import OrderCard from '../components/OrderCard.vue'
 
 const orderStore = useOrderStore()
-const activeTab = ref('reserved')
-
-const filteredOrders = computed(() => {
-  const tab = tabs.find(t => t.key === activeTab.value)
-  if (!tab) return orderStore.orders
-  return orderStore.orders.filter(o => o.status === tab.status)
-})
+const listRef = ref<HTMLDivElement>()
 
 const tabs = [
   { key: 'reserved', label: '已预约', status: 0 },
@@ -18,18 +13,21 @@ const tabs = [
   { key: 'settled', label: '已结算', status: 2 },
   { key: 'cancelled', label: '已取消', status: 3 }
 ]
+const activeKey = ref('reserved')
 
-onMounted(() => {
-  orderStore.fetchOrders()
-})
+onMounted(() => orderStore.switchTab(0))
 
-function onTabChange(key: string) {
-  activeTab.value = key
+function onTabClick(key: string) {
+  activeKey.value = key
+  const t = tabs.find(x => x.key === key)
+  if (t) orderStore.switchTab(t.status)
 }
+
+useInfiniteScroll(listRef, () => orderStore.loadMore(), { distance: 10 })
 </script>
 
 <template>
-  <div v-loading="orderStore.loading" class="page">
+  <div v-loading="orderStore.initialLoading" class="page">
     <div class="page-title">我的订单</div>
 
     <div class="order-tabs">
@@ -37,23 +35,25 @@ function onTabChange(key: string) {
         v-for="tab in tabs"
         :key="tab.key"
         class="tab-item"
-        :class="{ active: activeTab === tab.key }"
-        @click="onTabChange(tab.key)"
+        :class="{ active: activeKey === tab.key }"
+        @click="onTabClick(tab.key)"
       >
         {{ tab.label }}
       </div>
     </div>
 
-    <div class="order-list">
+    <div ref="listRef" class="order-list">
       <OrderCard
-        v-for="order in filteredOrders"
+        v-for="order in orderStore.currentOrders"
         :key="order.id"
         :order="order"
       />
+      <div v-if="orderStore.tabMap[orderStore.activeStatus]?.loading && orderStore.tabMap[orderStore.activeStatus]?.loaded" class="load-more">加载中...</div>
+      <div v-else-if="orderStore.tabMap[orderStore.activeStatus]?.hasMore === false && orderStore.currentOrders.length > 0" class="no-more">没有更多了</div>
     </div>
 
-    <div v-if="filteredOrders.length === 0" class="empty-state">
-      <el-empty :description="`暂无${tabs.find(t=>t.key===activeTab)?.label}订单`" />
+    <div v-if="!orderStore.currentOrders.length && !orderStore.initialLoading" class="empty-state">
+      <el-empty :description="`暂无${tabs.find(t=>t.key===activeKey)?.label}订单`" />
     </div>
   </div>
 </template>
@@ -94,5 +94,13 @@ function onTabChange(key: string) {
 
 .empty-state {
   margin-top: 60px;
+}
+
+.load-more,
+.no-more {
+  text-align: center;
+  font-size: 12px;
+  color: #ccc;
+  padding: 12px 0;
 }
 </style>

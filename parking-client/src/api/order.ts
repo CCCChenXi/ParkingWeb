@@ -4,7 +4,12 @@ export function createOrder(data: { lotId: number; spotId: number; seq: number; 
   return request.post('/orders', data)
 }
 
-export function getOrders(params?: { status?: number }) {
+export function getOrders(params: {
+  status: number
+  lastTimestamp?: number
+  lastId?: number
+  pageSize?: number
+}) {
   return request.get('/orders', { params })
 }
 
